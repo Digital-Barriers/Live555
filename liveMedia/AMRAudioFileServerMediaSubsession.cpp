@@ -14,38 +14,46 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // A 'ServerMediaSubsession' object that creates new, unicast, "RTPSink"s
 // on demand, from an AMR audio file.
 // Implementation
 
 #include "AMRAudioFileServerMediaSubsession.hh"
-#include "AMRAudioFileSource.hh"
 #include "AMRAudioRTPSink.hh"
+#include "AMRAudioFileSource.hh"
 
-AMRAudioFileServerMediaSubsession *AMRAudioFileServerMediaSubsession::createNew(
-    UsageEnvironment &env, char const *fileName, Boolean reuseFirstSource) {
+AMRAudioFileServerMediaSubsession*
+AMRAudioFileServerMediaSubsession::createNew(UsageEnvironment& env,
+					     char const* fileName,
+					     Boolean reuseFirstSource) {
   return new AMRAudioFileServerMediaSubsession(env, fileName, reuseFirstSource);
 }
 
-AMRAudioFileServerMediaSubsession ::AMRAudioFileServerMediaSubsession(
-    UsageEnvironment &env, char const *fileName, Boolean reuseFirstSource)
-    : FileServerMediaSubsession(env, fileName, reuseFirstSource) {}
+AMRAudioFileServerMediaSubsession
+::AMRAudioFileServerMediaSubsession(UsageEnvironment& env,
+				    char const* fileName, Boolean reuseFirstSource)
+  : FileServerMediaSubsession(env, fileName, reuseFirstSource) {
+}
 
-AMRAudioFileServerMediaSubsession ::~AMRAudioFileServerMediaSubsession() {}
+AMRAudioFileServerMediaSubsession
+::~AMRAudioFileServerMediaSubsession() {
+}
 
-FramedSource *AMRAudioFileServerMediaSubsession ::createNewStreamSource(
-    unsigned /*clientSessionId*/, unsigned &estBitrate) {
+FramedSource* AMRAudioFileServerMediaSubsession
+::createNewStreamSource(unsigned /*clientSessionId*/, unsigned& estBitrate) {
   estBitrate = 10; // kbps, estimate
 
   return AMRAudioFileSource::createNew(envir(), fFileName);
 }
 
-RTPSink *AMRAudioFileServerMediaSubsession ::createNewRTPSink(
-    Groupsock *rtpGroupsock, unsigned char rtpPayloadTypeIfDynamic,
-    FramedSource *inputSource) {
-  AMRAudioFileSource *amrSource = (AMRAudioFileSource *)inputSource;
-  return AMRAudioRTPSink::createNew(
-      envir(), rtpGroupsock, rtpPayloadTypeIfDynamic, amrSource->isWideband(),
-      amrSource->numChannels());
+RTPSink* AMRAudioFileServerMediaSubsession
+::createNewRTPSink(Groupsock* rtpGroupsock,
+		   unsigned char rtpPayloadTypeIfDynamic,
+		   FramedSource* inputSource) {
+  AMRAudioFileSource* amrSource = (AMRAudioFileSource*)inputSource;
+  return AMRAudioRTPSink::createNew(envir(), rtpGroupsock,
+				    rtpPayloadTypeIfDynamic,
+				    amrSource->isWideband(),
+				    amrSource->numChannels());
 }

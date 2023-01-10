@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // A RTP source for a simple RTP payload format that
 //     - doesn't have any special headers following the RTP header
 //     - doesn't have any special framing apart from the packet data itself
@@ -23,40 +23,46 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include "SimpleRTPSource.hh"
 #include <string.h>
 
-SimpleRTPSource *SimpleRTPSource::createNew(
-    UsageEnvironment &env, Groupsock *RTPgs, unsigned char rtpPayloadFormat,
-    unsigned rtpTimestampFrequency, char const *mimeTypeString, unsigned offset,
-    Boolean doNormalMBitRule) {
+SimpleRTPSource*
+SimpleRTPSource::createNew(UsageEnvironment& env,
+			   Groupsock* RTPgs,
+			   unsigned char rtpPayloadFormat,
+			   unsigned rtpTimestampFrequency,
+			   char const* mimeTypeString,
+			   unsigned offset, Boolean doNormalMBitRule) {
   return new SimpleRTPSource(env, RTPgs, rtpPayloadFormat,
-                             rtpTimestampFrequency, mimeTypeString, offset,
-                             doNormalMBitRule);
+			     rtpTimestampFrequency,
+			     mimeTypeString, offset, doNormalMBitRule);
 }
 
-SimpleRTPSource ::SimpleRTPSource(UsageEnvironment &env, Groupsock *RTPgs,
-                                  unsigned char rtpPayloadFormat,
-                                  unsigned rtpTimestampFrequency,
-                                  char const *mimeTypeString, unsigned offset,
-                                  Boolean doNormalMBitRule)
-    : MultiFramedRTPSource(env, RTPgs, rtpPayloadFormat, rtpTimestampFrequency),
-      fMIMEtypeString(strDup(mimeTypeString)), fOffset(offset) {
-  fUseMBitForFrameEnd =
-      doNormalMBitRule && strncmp(mimeTypeString, "audio/", 6) != 0;
+SimpleRTPSource
+::SimpleRTPSource(UsageEnvironment& env, Groupsock* RTPgs,
+		  unsigned char rtpPayloadFormat,
+		  unsigned rtpTimestampFrequency,
+		  char const* mimeTypeString,
+		  unsigned offset, Boolean doNormalMBitRule)
+  : MultiFramedRTPSource(env, RTPgs,
+			 rtpPayloadFormat, rtpTimestampFrequency),
+    fMIMEtypeString(strDup(mimeTypeString)), fOffset(offset) {
+  fUseMBitForFrameEnd = doNormalMBitRule && strncmp(mimeTypeString, "audio/", 6) != 0;
 }
 
-SimpleRTPSource::~SimpleRTPSource() { delete[](char *) fMIMEtypeString; }
+SimpleRTPSource::~SimpleRTPSource() {
+  delete[] (char*)fMIMEtypeString;
+}
 
-Boolean
-SimpleRTPSource ::processSpecialHeader(BufferedPacket *packet,
-                                       unsigned &resultSpecialHeaderSize) {
-  fCurrentPacketCompletesFrame = !fUseMBitForFrameEnd || packet->rtpMarkerBit();
+Boolean SimpleRTPSource
+::processSpecialHeader(BufferedPacket* packet,
+		       unsigned& resultSpecialHeaderSize) {
+  fCurrentPacketCompletesFrame
+    = !fUseMBitForFrameEnd || packet->rtpMarkerBit();
 
   resultSpecialHeaderSize = fOffset;
   return True;
 }
 
-char const *SimpleRTPSource::MIMEtype() const {
-  if (fMIMEtypeString == NULL)
-    return MultiFramedRTPSource::MIMEtype();
+char const* SimpleRTPSource::MIMEtype() const {
+  if (fMIMEtypeString == NULL) return MultiFramedRTPSource::MIMEtype();
 
   return fMIMEtypeString;
 }

@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // MP4V-ES video RTP stream sources
 // Implementation
 
@@ -24,30 +24,33 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 //##### NOTE: INCOMPLETE!!! #####
 
-MPEG4ESVideoRTPSource *
-MPEG4ESVideoRTPSource::createNew(UsageEnvironment &env, Groupsock *RTPgs,
-                                 unsigned char rtpPayloadFormat,
-                                 unsigned rtpTimestampFrequency) {
+MPEG4ESVideoRTPSource*
+MPEG4ESVideoRTPSource::createNew(UsageEnvironment& env, Groupsock* RTPgs,
+				   unsigned char rtpPayloadFormat,
+				   unsigned rtpTimestampFrequency) {
   return new MPEG4ESVideoRTPSource(env, RTPgs, rtpPayloadFormat,
-                                   rtpTimestampFrequency);
+				   rtpTimestampFrequency);
 }
 
-MPEG4ESVideoRTPSource ::MPEG4ESVideoRTPSource(UsageEnvironment &env,
-                                              Groupsock *RTPgs,
-                                              unsigned char rtpPayloadFormat,
-                                              unsigned rtpTimestampFrequency)
-    : MultiFramedRTPSource(env, RTPgs, rtpPayloadFormat,
-                           rtpTimestampFrequency) {}
+MPEG4ESVideoRTPSource
+::MPEG4ESVideoRTPSource(UsageEnvironment& env, Groupsock* RTPgs,
+			unsigned char rtpPayloadFormat,
+			unsigned rtpTimestampFrequency)
+  : MultiFramedRTPSource(env, RTPgs,
+			 rtpPayloadFormat, rtpTimestampFrequency) {
+}
 
-MPEG4ESVideoRTPSource::~MPEG4ESVideoRTPSource() {}
+MPEG4ESVideoRTPSource::~MPEG4ESVideoRTPSource() {
+}
 
-Boolean MPEG4ESVideoRTPSource ::processSpecialHeader(
-    BufferedPacket *packet, unsigned &resultSpecialHeaderSize) {
+Boolean MPEG4ESVideoRTPSource
+::processSpecialHeader(BufferedPacket* packet,
+		       unsigned& resultSpecialHeaderSize) {
   // The packet begins a frame iff its data begins with a system code
   // (i.e., 0x000001??)
-  fCurrentPacketBeginsFrame =
-      packet->dataSize() >= 4 && (packet->data())[0] == 0 &&
-      (packet->data())[1] == 0 && (packet->data())[2] == 1;
+  fCurrentPacketBeginsFrame
+    = packet->dataSize() >= 4 && (packet->data())[0] == 0
+    && (packet->data())[1] == 0 && (packet->data())[2] == 1;
 
   // The RTP "M" (marker) bit indicates the last fragment of a frame:
   fCurrentPacketCompletesFrame = packet->rtpMarkerBit();
@@ -57,4 +60,6 @@ Boolean MPEG4ESVideoRTPSource ::processSpecialHeader(
   return True;
 }
 
-char const *MPEG4ESVideoRTPSource::MIMEtype() const { return "video/MP4V-ES"; }
+char const* MPEG4ESVideoRTPSource::MIMEtype() const {
+  return "video/MP4V-ES";
+}

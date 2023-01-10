@@ -44,10 +44,6 @@ if (WIN32)
     target_link_libraries(live555 ws2_32 mswsock)
 endif ()
 
-if (LIVE555_EPOLL_SUPPORT)
-    add_subdirectory(EpollTaskScheduler)
-endif ()
-
 if (LIVE555_BUILD_EXAMPLES)
     add_subdirectory(proxyServer)
     add_subdirectory(mediaServer)

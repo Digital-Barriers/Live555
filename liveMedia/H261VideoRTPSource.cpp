@@ -14,38 +14,41 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // H.261 Video RTP Sources
 // Implementation
 
 #include "H261VideoRTPSource.hh"
 
-H261VideoRTPSource *
-H261VideoRTPSource::createNew(UsageEnvironment &env, Groupsock *RTPgs,
-                              unsigned char rtpPayloadFormat,
-                              unsigned rtpTimestampFrequency) {
+H261VideoRTPSource*
+H261VideoRTPSource::createNew(UsageEnvironment& env, Groupsock* RTPgs,
+				  unsigned char rtpPayloadFormat,
+				  unsigned rtpTimestampFrequency) {
   return new H261VideoRTPSource(env, RTPgs, rtpPayloadFormat,
-                                rtpTimestampFrequency);
+				    rtpTimestampFrequency);
 }
 
-H261VideoRTPSource ::H261VideoRTPSource(UsageEnvironment &env, Groupsock *RTPgs,
-                                        unsigned char rtpPayloadFormat,
-                                        unsigned rtpTimestampFrequency)
-    : MultiFramedRTPSource(env, RTPgs, rtpPayloadFormat, rtpTimestampFrequency),
-      fLastSpecialHeader(0) {}
+H261VideoRTPSource
+::H261VideoRTPSource(UsageEnvironment& env, Groupsock* RTPgs,
+			 unsigned char rtpPayloadFormat,
+			 unsigned rtpTimestampFrequency)
+  : MultiFramedRTPSource(env, RTPgs,
+			 rtpPayloadFormat, rtpTimestampFrequency),
+  fLastSpecialHeader(0) {
+}
 
-H261VideoRTPSource::~H261VideoRTPSource() {}
+H261VideoRTPSource::~H261VideoRTPSource() {
+}
 
-Boolean
-H261VideoRTPSource ::processSpecialHeader(BufferedPacket *packet,
-                                          unsigned &resultSpecialHeaderSize) {
+Boolean H261VideoRTPSource
+::processSpecialHeader(BufferedPacket* packet,
+                       unsigned& resultSpecialHeaderSize) {
   // There's a 4-byte video-specific header
-  if (packet->dataSize() < 4)
-    return False;
+  if (packet->dataSize() < 4) return False;
 
-  unsigned char *headerStart = packet->data();
-  fLastSpecialHeader = (headerStart[0] << 24) | (headerStart[1] << 16) |
-                       (headerStart[2] << 8) | headerStart[3];
+  unsigned char* headerStart = packet->data();
+  fLastSpecialHeader
+    = (headerStart[0]<<24)|(headerStart[1]<<16)|(headerStart[2]<<8)|headerStart[3];
 
 #ifdef DELIVER_COMPLETE_FRAMES
   fCurrentPacketBeginsFrame = fCurrentPacketCompletesFrame;
@@ -59,4 +62,6 @@ H261VideoRTPSource ::processSpecialHeader(BufferedPacket *packet,
   return True;
 }
 
-char const *H261VideoRTPSource::MIMEtype() const { return "video/H261"; }
+char const* H261VideoRTPSource::MIMEtype() const {
+  return "video/H261";
+}

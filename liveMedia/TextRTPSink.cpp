@@ -14,19 +14,23 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // A generic RTP sink for text codecs (abstract base class)
 // Implementation
 
 #include "TextRTPSink.hh"
 
-TextRTPSink::TextRTPSink(UsageEnvironment &env, Groupsock *rtpgs,
-                         unsigned char rtpPayloadType,
-                         unsigned rtpTimestampFrequency,
-                         char const *rtpPayloadFormatName)
-    : MultiFramedRTPSink(env, rtpgs, rtpPayloadType, rtpTimestampFrequency,
-                         rtpPayloadFormatName) {}
+TextRTPSink::TextRTPSink(UsageEnvironment& env,
+			 Groupsock* rtpgs, unsigned char rtpPayloadType,
+			 unsigned rtpTimestampFrequency,
+			 char const* rtpPayloadFormatName)
+  : MultiFramedRTPSink(env, rtpgs, rtpPayloadType, rtpTimestampFrequency,
+		       rtpPayloadFormatName) {
+}
 
-TextRTPSink::~TextRTPSink() {}
+TextRTPSink::~TextRTPSink() {
+}
 
-char const *TextRTPSink::sdpMediaType() const { return "text"; }
+char const* TextRTPSink::sdpMediaType() const {
+  return "text";
+}

@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // Framed Sources
 // Implementation
 
@@ -23,53 +23,52 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 ////////// FramedSource //////////
 
-FramedSource::FramedSource(UsageEnvironment &env)
-    : MediaSource(env), fAfterGettingFunc(NULL), fAfterGettingClientData(NULL),
-      fOnCloseFunc(NULL), fOnCloseClientData(NULL),
-      fIsCurrentlyAwaitingData(False) {
+FramedSource::FramedSource(UsageEnvironment& env)
+  : MediaSource(env),
+    fAfterGettingFunc(NULL), fAfterGettingClientData(NULL),
+    fOnCloseFunc(NULL), fOnCloseClientData(NULL),
+    fIsCurrentlyAwaitingData(False) {
   fPresentationTime.tv_sec = fPresentationTime.tv_usec = 0; // initially
 }
 
-FramedSource::~FramedSource() {}
+FramedSource::~FramedSource() {
+}
 
-Boolean FramedSource::isFramedSource() const { return True; }
+Boolean FramedSource::isFramedSource() const {
+  return True;
+}
 
-Boolean FramedSource::lookupByName(UsageEnvironment &env,
-                                   char const *sourceName,
-                                   FramedSource *&resultSource) {
+Boolean FramedSource::lookupByName(UsageEnvironment& env, char const* sourceName,
+				   FramedSource*& resultSource) {
   resultSource = NULL; // unless we succeed
 
-  MediaSource *source;
-  if (!MediaSource::lookupByName(env, sourceName, source))
-    return False;
+  MediaSource* source;
+  if (!MediaSource::lookupByName(env, sourceName, source)) return False;
 
   if (!source->isFramedSource()) {
     env.setResultMsg(sourceName, " is not a framed source");
     return False;
   }
 
-  resultSource = (FramedSource *)source;
+  resultSource = (FramedSource*)source;
   return True;
 }
 
-void FramedSource::getNextFrame(unsigned char *to, unsigned maxSize,
-                                afterGettingFunc *afterGettingFunc,
-                                void *afterGettingClientData,
-                                onCloseFunc *onCloseFunc,
-                                void *onCloseClientData) {
+void FramedSource::getNextFrame(unsigned char* to, unsigned maxSize,
+				afterGettingFunc* afterGettingFunc,
+				void* afterGettingClientData,
+				onCloseFunc* onCloseFunc,
+				void* onCloseClientData) {
   // Make sure we're not already being read:
   if (fIsCurrentlyAwaitingData) {
-    envir() << "FramedSource[" << this
-            << "]::getNextFrame(): attempting to read more than once at the "
-               "same time!\n";
+    envir() << "FramedSource[" << this << "]::getNextFrame(): attempting to read more than once at the same time!\n";
     envir().internalError();
   }
 
   fTo = to;
   fMaxSize = maxSize;
   fNumTruncatedBytes = 0; // by default; could be changed by doGetNextFrame()
-  fDurationInMicroseconds =
-      0; // by default; could be changed by doGetNextFrame()
+  fDurationInMicroseconds = 0; // by default; could be changed by doGetNextFrame()
   fAfterGettingFunc = afterGettingFunc;
   fAfterGettingClientData = afterGettingClientData;
   fOnCloseFunc = onCloseFunc;
@@ -79,23 +78,23 @@ void FramedSource::getNextFrame(unsigned char *to, unsigned maxSize,
   doGetNextFrame();
 }
 
-void FramedSource::afterGetting(FramedSource *source) {
+void FramedSource::afterGetting(FramedSource* source) {
   source->nextTask() = NULL;
   source->fIsCurrentlyAwaitingData = False;
-  // indicates that we can be read again
-  // Note that this needs to be done here, in case the "fAfterFunc"
-  // called below tries to read another frame (which it usually will)
+      // indicates that we can be read again
+      // Note that this needs to be done here, in case the "fAfterFunc"
+      // called below tries to read another frame (which it usually will)
 
   if (source->fAfterGettingFunc != NULL) {
-    (*(source->fAfterGettingFunc))(
-        source->fAfterGettingClientData, source->fFrameSize,
-        source->fNumTruncatedBytes, source->fPresentationTime,
-        source->fDurationInMicroseconds);
+    (*(source->fAfterGettingFunc))(source->fAfterGettingClientData,
+				   source->fFrameSize, source->fNumTruncatedBytes,
+				   source->fPresentationTime,
+				   source->fDurationInMicroseconds);
   }
 }
 
-void FramedSource::handleClosure(void *clientData) {
-  FramedSource *source = (FramedSource *)clientData;
+void FramedSource::handleClosure(void* clientData) {
+  FramedSource* source = (FramedSource*)clientData;
   source->handleClosure();
 }
 
@@ -116,8 +115,7 @@ void FramedSource::stopGettingFrames() {
 }
 
 void FramedSource::doStopGettingFrames() {
-  // Default implementation: Do nothing except cancel any pending 'delivery'
-  // task:
+  // Default implementation: Do nothing except cancel any pending 'delivery' task:
   envir().taskScheduler().unscheduleDelayedTask(nextTask());
   // Subclasses may wish to redefine this function.
 }

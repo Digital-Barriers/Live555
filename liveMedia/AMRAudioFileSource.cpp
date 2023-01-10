@@ -14,63 +14,55 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // A source object for AMR audio files (as defined in RFC 4867, section 5)
 // Implementation
 
 #include "AMRAudioFileSource.hh"
-#include "GroupsockHelper.hh"
 #include "InputFile.hh"
+#include "GroupsockHelper.hh"
 
 ////////// AMRAudioFileSource //////////
 
-AMRAudioFileSource *AMRAudioFileSource::createNew(UsageEnvironment &env,
-                                                  char const *fileName) {
-  FILE *fid = NULL;
+AMRAudioFileSource*
+AMRAudioFileSource::createNew(UsageEnvironment& env, char const* fileName) {
+  FILE* fid = NULL;
   Boolean magicNumberOK = True;
   do {
 
     fid = OpenInputFile(env, fileName);
-    if (fid == NULL)
-      break;
+    if (fid == NULL) break;
 
     // Now, having opened the input file, read the first few bytes, to
     // check the required 'magic number':
-    magicNumberOK = False;      // until we learn otherwise
+    magicNumberOK = False; // until we learn otherwise
     Boolean isWideband = False; // by default
-    unsigned numChannels = 1;   // by default
+    unsigned numChannels = 1; // by default
     char buf[100];
     // Start with the first 6 bytes (the first 5 of which must be "#!AMR"):
-    if (fread(buf, 1, 6, fid) < 6)
-      break;
-    if (strncmp(buf, "#!AMR", 5) != 0)
-      break; // bad magic #
+    if (fread(buf, 1, 6, fid) < 6) break;
+    if (strncmp(buf, "#!AMR", 5) != 0) break; // bad magic #
     unsigned bytesRead = 6;
 
     // The next bytes must be "\n", "-WB\n", "_MC1.0\n", or "-WB_MC1.0\n"
     if (buf[5] == '-') {
       // The next bytes must be "WB\n" or "WB_MC1.0\n"
-      if (fread(&buf[bytesRead], 1, 3, fid) < 3)
-        break;
-      if (strncmp(&buf[bytesRead], "WB", 2) != 0)
-        break; // bad magic #
+      if (fread(&buf[bytesRead], 1, 3, fid) < 3) break;
+      if (strncmp(&buf[bytesRead], "WB", 2) != 0) break; // bad magic #
       isWideband = True;
       bytesRead += 3;
     }
-    if (buf[bytesRead - 1] == '_') {
+    if (buf[bytesRead-1] == '_') {
       // The next bytes must be "MC1.0\n"
-      if (fread(&buf[bytesRead], 1, 6, fid) < 6)
-        break;
-      if (strncmp(&buf[bytesRead], "MC1.0\n", 6) != 0)
-        break; // bad magic #
+      if (fread(&buf[bytesRead], 1, 6, fid) < 6) break;
+      if (strncmp(&buf[bytesRead], "MC1.0\n", 6) != 0) break; // bad magic #
       bytesRead += 6;
 
       // The next 4 bytes contain the number of channels:
       char channelDesc[4];
-      if (fread(channelDesc, 1, 4, fid) < 4)
-        break;
-      numChannels = channelDesc[3] & 0xF;
-    } else if (buf[bytesRead - 1] != '\n') {
+      if (fread(channelDesc, 1, 4, fid) < 4) break;
+      numChannels = channelDesc[3]&0xF;
+    } else if (buf[bytesRead-1] != '\n') {
       break; // bad magic #
     }
 
@@ -78,8 +70,8 @@ AMRAudioFileSource *AMRAudioFileSource::createNew(UsageEnvironment &env,
     magicNumberOK = True;
 
 #ifdef DEBUG
-    fprintf(stderr, "isWideband: %d, numChannels: %d\n", isWideband,
-            numChannels);
+    fprintf(stderr, "isWideband: %d, numChannels: %d\n",
+	    isWideband, numChannels);
 #endif
     return new AMRAudioFileSource(env, fid, isWideband, numChannels);
   } while (0);
@@ -92,23 +84,32 @@ AMRAudioFileSource *AMRAudioFileSource::createNew(UsageEnvironment &env,
   return NULL;
 }
 
-AMRAudioFileSource ::AMRAudioFileSource(UsageEnvironment &env, FILE *fid,
-                                        Boolean isWideband,
-                                        unsigned numChannels)
-    : AMRAudioSource(env, isWideband, numChannels), fFid(fid) {}
+AMRAudioFileSource
+::AMRAudioFileSource(UsageEnvironment& env, FILE* fid,
+		     Boolean isWideband, unsigned numChannels)
+  : AMRAudioSource(env, isWideband, numChannels),
+    fFid(fid) {
+}
 
-AMRAudioFileSource::~AMRAudioFileSource() { CloseInputFile(fFid); }
+AMRAudioFileSource::~AMRAudioFileSource() {
+  CloseInputFile(fFid);
+}
 
 // The mapping from the "FT" field to frame size.
 // Values of 65535 are invalid.
 #define FT_INVALID 65535
 static unsigned short const frameSize[16] = {
-    12,         13,         15,         17,         19,         20,
-    26,         31,         5,          FT_INVALID, FT_INVALID, FT_INVALID,
-    FT_INVALID, FT_INVALID, FT_INVALID, 0};
+  12, 13, 15, 17,
+  19, 20, 26, 31,
+  5, FT_INVALID, FT_INVALID, FT_INVALID,
+  FT_INVALID, FT_INVALID, FT_INVALID, 0
+};
 static unsigned short const frameSizeWideband[16] = {
-    17, 23, 32,         36,         40,         46,         50, 58,
-    60, 5,  FT_INVALID, FT_INVALID, FT_INVALID, FT_INVALID, 0,  0};
+  17, 23, 32, 36,
+  40, 46, 50, 58,
+  60, 5, FT_INVALID, FT_INVALID,
+  FT_INVALID, FT_INVALID, 0, 0
+};
 
 // Note: We should change the following to use asynchronous file reading, #####
 // as we now do with ByteStreamFileSource. #####
@@ -124,28 +125,24 @@ void AMRAudioFileSource::doGetNextFrame() {
       handleClosure();
       return;
     }
-    if ((fLastFrameHeader & 0x83) != 0) {
+    if ((fLastFrameHeader&0x83) != 0) {
 #ifdef DEBUG
-      fprintf(
-          stderr,
-          "Invalid frame header 0x%02x (padding bits (0x83) are not zero)\n",
-          fLastFrameHeader);
+      fprintf(stderr, "Invalid frame header 0x%02x (padding bits (0x83) are not zero)\n", fLastFrameHeader);
 #endif
     } else {
-      unsigned char ft = (fLastFrameHeader & 0x78) >> 3;
+      unsigned char ft = (fLastFrameHeader&0x78)>>3;
       fFrameSize = fIsWideband ? frameSizeWideband[ft] : frameSize[ft];
       if (fFrameSize == FT_INVALID) {
 #ifdef DEBUG
-        fprintf(stderr, "Invalid FT field %d (from frame header 0x%02x)\n", ft,
-                fLastFrameHeader);
+	fprintf(stderr, "Invalid FT field %d (from frame header 0x%02x)\n",
+		ft, fLastFrameHeader);
 #endif
       } else {
-        // The frame header is OK
+	// The frame header is OK
 #ifdef DEBUG
-        fprintf(stderr, "Valid frame header 0x%02x -> ft %d -> frame size %d\n",
-                fLastFrameHeader, ft, fFrameSize);
+	fprintf(stderr, "Valid frame header 0x%02x -> ft %d -> frame size %d\n", fLastFrameHeader, ft, fFrameSize);
 #endif
-        break;
+	break;
       }
     }
   }
@@ -164,14 +161,14 @@ void AMRAudioFileSource::doGetNextFrame() {
     gettimeofday(&fPresentationTime, NULL);
   } else {
     // Increment by the play time of the previous frame (20 ms)
-    unsigned uSeconds = fPresentationTime.tv_usec + 20000;
-    fPresentationTime.tv_sec += uSeconds / 1000000;
-    fPresentationTime.tv_usec = uSeconds % 1000000;
+    unsigned uSeconds	= fPresentationTime.tv_usec + 20000;
+    fPresentationTime.tv_sec += uSeconds/1000000;
+    fPresentationTime.tv_usec = uSeconds%1000000;
   }
 
   fDurationInMicroseconds = 20000; // each frame is 20 ms
 
   // Switch to another task, and inform the reader that he has data:
-  nextTask() = envir().taskScheduler().scheduleDelayedTask(
-      0, (TaskFunc *)FramedSource::afterGetting, this);
-}
+  nextTask() = envir().taskScheduler().scheduleDelayedTask(0,
+				(TaskFunc*)FramedSource::afterGetting, this);
+ }

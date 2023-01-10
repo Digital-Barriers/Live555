@@ -14,19 +14,22 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // An abstract parser for MPEG video streams
 // Implementation
 
 #include "MPEGVideoStreamParser.hh"
 
-MPEGVideoStreamParser ::MPEGVideoStreamParser(
-    MPEGVideoStreamFramer *usingSource, FramedSource *inputSource)
-    : StreamParser(inputSource, FramedSource::handleClosure, usingSource,
-                   &MPEGVideoStreamFramer::continueReadProcessing, usingSource),
-      fUsingSource(usingSource) {}
+MPEGVideoStreamParser
+::MPEGVideoStreamParser(MPEGVideoStreamFramer* usingSource,
+			FramedSource* inputSource)
+  : StreamParser(inputSource, FramedSource::handleClosure, usingSource,
+		 &MPEGVideoStreamFramer::continueReadProcessing, usingSource),
+  fUsingSource(usingSource) {
+}
 
-MPEGVideoStreamParser::~MPEGVideoStreamParser() {}
+MPEGVideoStreamParser::~MPEGVideoStreamParser() {
+}
 
 void MPEGVideoStreamParser::restoreSavedParserState() {
   StreamParser::restoreSavedParserState();
@@ -34,8 +37,8 @@ void MPEGVideoStreamParser::restoreSavedParserState() {
   fNumTruncatedBytes = fSavedNumTruncatedBytes;
 }
 
-void MPEGVideoStreamParser::registerReadInterest(unsigned char *to,
-                                                 unsigned maxSize) {
+void MPEGVideoStreamParser::registerReadInterest(unsigned char* to,
+						 unsigned maxSize) {
   fStartOfFrame = fTo = fSavedTo = to;
   fLimit = to + maxSize;
   fNumTruncatedBytes = fSavedNumTruncatedBytes = 0;

@@ -13,36 +13,39 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
-// Copyright (c) 1996-2020, Live Networks, Inc.  All rights reserved
+// Copyright (c) 1996-2022, Live Networks, Inc.  All rights reserved
 // A test program that reads a DV Video Elementary Stream file,
 // and streams it using RTP
 // main program
 
-#include "BasicUsageEnvironment.hh"
-#include "GroupsockHelper.hh"
 #include "liveMedia.hh"
 
-UsageEnvironment *env;
-char const *inputFileName = "test.dv";
-DVVideoStreamFramer *videoSource;
-RTPSink *videoSink;
+#include "BasicUsageEnvironment.hh"
+#include "announceURL.hh"
+#include "GroupsockHelper.hh"
+
+UsageEnvironment* env;
+char const* inputFileName = "test.dv";
+DVVideoStreamFramer* videoSource;
+RTPSink* videoSink;
 
 void play(); // forward
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   // Begin by setting up our usage environment:
-  TaskScheduler *scheduler = BasicTaskScheduler::createNew();
+  TaskScheduler* scheduler = BasicTaskScheduler::createNew();
   env = BasicUsageEnvironment::createNew(*scheduler);
 
   // Create 'groupsocks' for RTP and RTCP:
-  struct in_addr destinationAddress;
-  destinationAddress.s_addr = chooseRandomIPv4SSMAddress(*env);
+  struct sockaddr_storage destinationAddress;
+  destinationAddress.ss_family = AF_INET;
+  ((struct sockaddr_in&)destinationAddress).sin_addr.s_addr = chooseRandomIPv4SSMAddress(*env);
   // Note: This is a multicast address.  If you wish instead to stream
   // using unicast, then you should use the "testOnDemandRTSPServer"
   // test program - not this test program - as a model.
 
   const unsigned short rtpPortNum = 18888;
-  const unsigned short rtcpPortNum = rtpPortNum + 1;
+  const unsigned short rtcpPortNum = rtpPortNum+1;
   const unsigned char ttl = 255;
 
   const Port rtpPort(rtpPortNum);
@@ -54,37 +57,35 @@ int main(int argc, char **argv) {
   rtcpGroupsock.multicastSendOnly(); // we're a SSM source
 
   // Create a 'DV Video RTP' sink from the RTP 'groupsock':
-  // (But first, make sure that its buffers will be large enough to handle the
-  // huge size of DV frames (as big as 288000).)
+  // (But first, make sure that its buffers will be large enough to handle the huge size of DV frames (as big as 288000).)
   OutPacketBuffer::maxSize = 300000;
   videoSink = DVVideoRTPSink::createNew(*env, &rtpGroupsock, 96);
 
   // Create (and start) a 'RTCP instance' for this RTP sink:
-  const unsigned estimatedSessionBandwidth =
-      50000; // in kbps; for RTCP b/w share
+  const unsigned estimatedSessionBandwidth = 50000; // in kbps; for RTCP b/w share
   const unsigned maxCNAMElen = 100;
-  unsigned char CNAME[maxCNAMElen + 1];
-  gethostname((char *)CNAME, maxCNAMElen);
+  unsigned char CNAME[maxCNAMElen+1];
+  gethostname((char*)CNAME, maxCNAMElen);
   CNAME[maxCNAMElen] = '\0'; // just in case
-  RTCPInstance *rtcp = RTCPInstance::createNew(
-      *env, &rtcpGroupsock, estimatedSessionBandwidth, CNAME, videoSink,
-      NULL /* we're a server */, True /* we're a SSM source */);
+  RTCPInstance* rtcp
+  = RTCPInstance::createNew(*env, &rtcpGroupsock,
+			    estimatedSessionBandwidth, CNAME,
+			    videoSink, NULL /* we're a server */,
+			    True /* we're a SSM source */);
   // Note: This starts RTCP running automatically
 
-  RTSPServer *rtspServer = RTSPServer::createNew(*env, 8554);
+  RTSPServer* rtspServer = RTSPServer::createNew(*env, 8554);
   if (rtspServer == NULL) {
     *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
     exit(1);
   }
-  ServerMediaSession *sms = ServerMediaSession::createNew(
-      *env, "testStream", inputFileName,
-      "Session streamed by \"testDVVideoStreamer\"", True /*SSM*/);
+  ServerMediaSession* sms
+    = ServerMediaSession::createNew(*env, "testStream", inputFileName,
+		   "Session streamed by \"testDVVideoStreamer\"",
+					   True /*SSM*/);
   sms->addSubsession(PassiveServerMediaSubsession::createNew(*videoSink, rtcp));
   rtspServer->addServerMediaSession(sms);
-
-  char *url = rtspServer->rtspURL(sms);
-  *env << "Play this stream using the URL \"" << url << "\"\n";
-  delete[] url;
+  announceURL(rtspServer, sms);
 
   // Start the streaming:
   *env << "Beginning streaming...\n";
@@ -95,7 +96,7 @@ int main(int argc, char **argv) {
   return 0; // only to prevent compiler warning
 }
 
-void afterPlaying(void * /*clientData*/) {
+void afterPlaying(void* /*clientData*/) {
   *env << "...done reading from file\n";
 
   videoSink->stopPlaying();
@@ -108,15 +109,15 @@ void afterPlaying(void * /*clientData*/) {
 
 void play() {
   // Open the input file as a 'byte-stream file source':
-  ByteStreamFileSource *fileSource =
-      ByteStreamFileSource::createNew(*env, inputFileName);
+  ByteStreamFileSource* fileSource
+    = ByteStreamFileSource::createNew(*env, inputFileName);
   if (fileSource == NULL) {
     *env << "Unable to open file \"" << inputFileName
-         << "\" as a byte-stream file source\n";
+	 << "\" as a byte-stream file source\n";
     exit(1);
   }
 
-  FramedSource *videoES = fileSource;
+  FramedSource* videoES = fileSource;
 
   // Create a framer for the Video Elementary Stream:
   videoSource = DVVideoStreamFramer::createNew(*env, videoES);

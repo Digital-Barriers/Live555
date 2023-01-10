@@ -14,16 +14,16 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // A class that encapsulates an Ogg file.
 // Implementation
 
-#include "ByteStreamFileSource.hh"
-#include "OggDemuxedTrack.hh"
 #include "OggFileParser.hh"
+#include "OggDemuxedTrack.hh"
+#include "ByteStreamFileSource.hh"
+#include "VorbisAudioRTPSink.hh"
 #include "SimpleRTPSink.hh"
 #include "TheoraVideoRTPSink.hh"
-#include "VorbisAudioRTPSink.hh"
 
 ////////// OggTrackTable definition /////////
 
@@ -34,52 +34,76 @@ public:
   OggTrackTable();
   virtual ~OggTrackTable();
 
-  void add(OggTrack *newTrack);
-  OggTrack *lookup(u_int32_t trackNumber);
+  void add(OggTrack* newTrack);
+  OggTrack* lookup(u_int32_t trackNumber);
 
   unsigned numTracks() const;
 
 private:
   friend class OggTrackTableIterator;
-  HashTable *fTable;
+  HashTable* fTable;
 };
+
 
 ////////// OggFile implementation //////////
 
-void OggFile::createNew(UsageEnvironment &env, char const *fileName,
-                        onCreationFunc *onCreation,
-                        void *onCreationClientData) {
+void OggFile::createNew(UsageEnvironment& env, char const* fileName,
+			onCreationFunc* onCreation, void* onCreationClientData) {
   new OggFile(env, fileName, onCreation, onCreationClientData);
 }
 
-OggTrack *OggFile::lookup(u_int32_t trackNumber) {
+OggTrack* OggFile::lookup(u_int32_t trackNumber) {
   return fTrackTable->lookup(trackNumber);
 }
 
-OggDemux *OggFile::newDemux() {
-  OggDemux *demux = new OggDemux(*this);
-  fDemuxesTable->Add((char const *)demux, demux);
+struct DemuxRecord {
+  OggDemux* demux;
+  OggDemuxOnDeletionFunc* onDeletionFunc;
+  void* objectToNotify;
+};
+
+OggDemux* OggFile
+::newDemux(OggDemuxOnDeletionFunc* onDeletionFunc, void* objectToNotify) {
+  OggDemux* demux = new OggDemux(*this);
+
+  DemuxRecord* demuxRecord = new DemuxRecord();
+  demuxRecord->demux = demux;
+  demuxRecord->onDeletionFunc = onDeletionFunc;
+  demuxRecord->objectToNotify = objectToNotify;
+
+  fDemuxesTable->Add((char const*)demux, demuxRecord);
 
   return demux;
 }
 
-unsigned OggFile::numTracks() const { return fTrackTable->numTracks(); }
+void OggFile::removeDemux(OggDemux* demux) {
+  DemuxRecord* demuxRecord = (DemuxRecord*)(fDemuxesTable->Lookup((char const*)demux));
+  if (demuxRecord != NULL) {
+    fDemuxesTable->Remove((char const*)demux);
 
-FramedSource *
-OggFile ::createSourceForStreaming(FramedSource *baseSource,
-                                   u_int32_t trackNumber, unsigned &estBitrate,
-                                   unsigned &numFiltersInFrontOfTrack) {
-  if (baseSource == NULL)
-    return NULL;
+    if (demuxRecord->onDeletionFunc != NULL) {
+      (*demuxRecord->onDeletionFunc)(demuxRecord->objectToNotify, demux);
+    }
+    delete demuxRecord;
+  }
+}
 
-  FramedSource *result = baseSource; // by default
-  numFiltersInFrontOfTrack = 0;      // by default
+unsigned OggFile::numTracks() const {
+  return fTrackTable->numTracks();
+}
 
-  // Look at the track's MIME type to set its estimated bitrate (for use by
-  // RTCP). (Later, try to be smarter about figuring out the bitrate.) #####
-  // Some MIME types also require adding a special 'framer' in front of the
-  // source.
-  OggTrack *track = lookup(trackNumber);
+FramedSource* OggFile
+::createSourceForStreaming(FramedSource* baseSource, u_int32_t trackNumber,
+                           unsigned& estBitrate, unsigned& numFiltersInFrontOfTrack) {
+  if (baseSource == NULL) return NULL;
+
+  FramedSource* result = baseSource; // by default
+  numFiltersInFrontOfTrack = 0; // by default
+
+  // Look at the track's MIME type to set its estimated bitrate (for use by RTCP).
+  // (Later, try to be smarter about figuring out the bitrate.) #####
+  // Some MIME types also require adding a special 'framer' in front of the source.
+  OggTrack* track = lookup(trackNumber);
   if (track != NULL) { // should always be true
     estBitrate = track->estBitrate;
   }
@@ -87,62 +111,56 @@ OggFile ::createSourceForStreaming(FramedSource *baseSource,
   return result;
 }
 
-RTPSink *
-OggFile ::createRTPSinkForTrackNumber(u_int32_t trackNumber,
-                                      Groupsock *rtpGroupsock,
-                                      unsigned char rtpPayloadTypeIfDynamic) {
-  OggTrack *track = lookup(trackNumber);
-  if (track == NULL || track->mimeType == NULL)
-    return NULL;
+RTPSink* OggFile
+::createRTPSinkForTrackNumber(u_int32_t trackNumber, Groupsock* rtpGroupsock,
+                              unsigned char rtpPayloadTypeIfDynamic) {
+  OggTrack* track = lookup(trackNumber);
+  if (track == NULL || track->mimeType == NULL) return NULL;
 
-  RTPSink *result = NULL; // default value for unknown media types
+  RTPSink* result = NULL; // default value for unknown media types
 
   if (strcmp(track->mimeType, "audio/VORBIS") == 0) {
-    // For Vorbis audio, we use the special "identification", "comment", and
-    // "setup" headers that we read when we initially read the headers at the
-    // start of the file:
-    result = VorbisAudioRTPSink::createNew(
-        envir(), rtpGroupsock, rtpPayloadTypeIfDynamic,
-        track->samplingFrequency, track->numChannels, track->vtoHdrs.header[0],
-        track->vtoHdrs.headerSize[0], track->vtoHdrs.header[1],
-        track->vtoHdrs.headerSize[1], track->vtoHdrs.header[2],
-        track->vtoHdrs.headerSize[2]);
+    // For Vorbis audio, we use the special "identification", "comment", and "setup" headers
+    // that we read when we initially read the headers at the start of the file:
+    result = VorbisAudioRTPSink::createNew(envir(), rtpGroupsock, rtpPayloadTypeIfDynamic,
+					   track->samplingFrequency, track->numChannels,
+					   track->vtoHdrs.header[0], track->vtoHdrs.headerSize[0],
+					   track->vtoHdrs.header[1], track->vtoHdrs.headerSize[1],
+					   track->vtoHdrs.header[2], track->vtoHdrs.headerSize[2]);
   } else if (strcmp(track->mimeType, "audio/OPUS") == 0) {
-    result = SimpleRTPSink ::createNew(
-        envir(), rtpGroupsock, rtpPayloadTypeIfDynamic, 48000, "audio", "OPUS",
-        2, False /*only 1 Opus 'packet' in each RTP packet*/);
+    result = SimpleRTPSink
+      ::createNew(envir(), rtpGroupsock, rtpPayloadTypeIfDynamic,
+		  48000, "audio", "OPUS", 2, False/*only 1 Opus 'packet' in each RTP packet*/);
   } else if (strcmp(track->mimeType, "video/THEORA") == 0) {
-    // For Theora video, we use the special "identification", "comment", and
-    // "setup" headers that we read when we initially read the headers at the
-    // start of the file:
-    result = TheoraVideoRTPSink::createNew(
-        envir(), rtpGroupsock, rtpPayloadTypeIfDynamic,
-        track->vtoHdrs.header[0], track->vtoHdrs.headerSize[0],
-        track->vtoHdrs.header[1], track->vtoHdrs.headerSize[1],
-        track->vtoHdrs.header[2], track->vtoHdrs.headerSize[2]);
+    // For Theora video, we use the special "identification", "comment", and "setup" headers
+    // that we read when we initially read the headers at the start of the file:
+    result = TheoraVideoRTPSink::createNew(envir(), rtpGroupsock, rtpPayloadTypeIfDynamic,
+					   track->vtoHdrs.header[0], track->vtoHdrs.headerSize[0],
+					   track->vtoHdrs.header[1], track->vtoHdrs.headerSize[1],
+					   track->vtoHdrs.header[2], track->vtoHdrs.headerSize[2]);
   }
 
   return result;
 }
 
-OggFile::OggFile(UsageEnvironment &env, char const *fileName,
-                 onCreationFunc *onCreation, void *onCreationClientData)
-    : Medium(env), fFileName(strDup(fileName)), fOnCreation(onCreation),
-      fOnCreationClientData(onCreationClientData) {
+
+OggFile::OggFile(UsageEnvironment& env, char const* fileName,
+		 onCreationFunc* onCreation, void* onCreationClientData)
+  : Medium(env),
+    fFileName(strDup(fileName)),
+    fOnCreation(onCreation), fOnCreationClientData(onCreationClientData) {
   fTrackTable = new OggTrackTable;
   fDemuxesTable = HashTable::create(ONE_WORD_HASH_KEYS);
 
-  FramedSource *inputSource =
-      ByteStreamFileSource::createNew(envir(), fileName);
+  FramedSource* inputSource = ByteStreamFileSource::createNew(envir(), fileName);
   if (inputSource == NULL) {
     // The specified input file does not exist!
     fParserForInitialization = NULL;
-    handleEndOfBosPageParsing(); // we have no file, and thus no tracks, but we
-                                 // still need to signal this
+    handleEndOfBosPageParsing(); // we have no file, and thus no tracks, but we still need to signal this
   } else {
     // Initialize ourselves by parsing the file's headers:
-    fParserForInitialization =
-        new OggFileParser(*this, inputSource, handleEndOfBosPageParsing, this);
+    fParserForInitialization
+      = new OggFileParser(*this, inputSource, handleEndOfBosPageParsing, this);
   }
 }
 
@@ -150,79 +168,80 @@ OggFile::~OggFile() {
   delete fParserForInitialization;
 
   // Delete any outstanding "OggDemux"s, and the table for them:
-  OggDemux *demux;
-  while ((demux = (OggDemux *)fDemuxesTable->RemoveNext()) != NULL) {
-    delete demux;
+  DemuxRecord* demuxRecord;
+  while ((demuxRecord = (DemuxRecord*)fDemuxesTable->RemoveNext()) != NULL) {
+    delete demuxRecord->demux;
+    delete demuxRecord;
   }
   delete fDemuxesTable;
   delete fTrackTable;
 
-  delete[](char *) fFileName;
+  delete[] (char*)fFileName;
 }
 
-void OggFile::handleEndOfBosPageParsing(void *clientData) {
-  ((OggFile *)clientData)->handleEndOfBosPageParsing();
+void OggFile::handleEndOfBosPageParsing(void* clientData) {
+  ((OggFile*)clientData)->handleEndOfBosPageParsing();
 }
 
 void OggFile::handleEndOfBosPageParsing() {
   // Delete our parser, because it's done its job now:
-  delete fParserForInitialization;
-  fParserForInitialization = NULL;
+  delete fParserForInitialization; fParserForInitialization = NULL;
 
   // Finally, signal our caller that we've been created and initialized:
-  if (fOnCreation != NULL)
-    (*fOnCreation)(this, fOnCreationClientData);
+  if (fOnCreation != NULL) (*fOnCreation)(this, fOnCreationClientData);
 }
 
-void OggFile::addTrack(OggTrack *newTrack) { fTrackTable->add(newTrack); }
-
-void OggFile::removeDemux(OggDemux *demux) {
-  fDemuxesTable->Remove((char const *)demux);
+void OggFile::addTrack(OggTrack* newTrack) {
+  fTrackTable->add(newTrack);
 }
+
 
 ////////// OggTrackTable implementation /////////
 
 OggTrackTable::OggTrackTable()
-    : fTable(HashTable::create(ONE_WORD_HASH_KEYS)) {}
+  : fTable(HashTable::create(ONE_WORD_HASH_KEYS)) {
+}
 
 OggTrackTable::~OggTrackTable() {
-  // Remove and delete all of our "OggTrack" descriptors, and the hash table
-  // itself:
-  OggTrack *track;
-  while ((track = (OggTrack *)fTable->RemoveNext()) != NULL) {
+  // Remove and delete all of our "OggTrack" descriptors, and the hash table itself:
+  OggTrack* track;
+  while ((track = (OggTrack*)fTable->RemoveNext()) != NULL) {
     delete track;
   }
   delete fTable;
 }
 
-void OggTrackTable::add(OggTrack *newTrack) {
-  OggTrack *existingTrack =
-      (OggTrack *)fTable->Add((char const *)newTrack->trackNumber, newTrack);
+void OggTrackTable::add(OggTrack* newTrack) {
+  OggTrack* existingTrack
+    = (OggTrack*)fTable->Add((char const*)newTrack->trackNumber, newTrack);
   delete existingTrack; // if any
 }
 
-OggTrack *OggTrackTable::lookup(u_int32_t trackNumber) {
-  return (OggTrack *)fTable->Lookup((char const *)trackNumber);
+OggTrack* OggTrackTable::lookup(u_int32_t trackNumber) {
+  return (OggTrack*)fTable->Lookup((char const*)trackNumber);
 }
 
 unsigned OggTrackTable::numTracks() const { return fTable->numEntries(); }
 
-OggTrackTableIterator::OggTrackTableIterator(OggTrackTable &ourTable) {
+OggTrackTableIterator::OggTrackTableIterator(OggTrackTable& ourTable) {
   fIter = HashTable::Iterator::create(*(ourTable.fTable));
 }
 
-OggTrackTableIterator::~OggTrackTableIterator() { delete fIter; }
-
-OggTrack *OggTrackTableIterator::next() {
-  char const *key;
-  return (OggTrack *)fIter->next(key);
+OggTrackTableIterator::~OggTrackTableIterator() {
+  delete fIter;
 }
+
+OggTrack* OggTrackTableIterator::next() {
+  char const* key;
+  return (OggTrack*)fIter->next(key);
+}
+
 
 ////////// OggTrack implementation //////////
 
 OggTrack::OggTrack()
-    : trackNumber(0), mimeType(NULL), samplingFrequency(48000), numChannels(2),
-      estBitrate(100) { // default settings
+  : trackNumber(0), mimeType(NULL),
+    samplingFrequency(48000), numChannels(2), estBitrate(100) { // default settings
   vtoHdrs.header[0] = vtoHdrs.header[1] = vtoHdrs.header[2] = NULL;
   vtoHdrs.headerSize[0] = vtoHdrs.headerSize[1] = vtoHdrs.headerSize[2] = 0;
 
@@ -231,16 +250,15 @@ OggTrack::OggTrack()
 }
 
 OggTrack::~OggTrack() {
-  delete[] vtoHdrs.header[0];
-  delete[] vtoHdrs.header[1];
-  delete[] vtoHdrs.header[2];
+  delete[] vtoHdrs.header[0]; delete[] vtoHdrs.header[1]; delete[] vtoHdrs.header[2];
   delete[] vtoHdrs.vorbis_mode_blockflag;
 }
 
+
 ///////// OggDemux implementation /////////
 
-FramedSource *OggDemux::newDemuxedTrack(u_int32_t &resultTrackNumber) {
-  OggTrack *nextTrack;
+FramedSource* OggDemux::newDemuxedTrack(u_int32_t& resultTrackNumber) {
+  OggTrack* nextTrack;
   do {
     nextTrack = fIter->next();
   } while (nextTrack != NULL && nextTrack->mimeType == NULL);
@@ -251,34 +269,29 @@ FramedSource *OggDemux::newDemuxedTrack(u_int32_t &resultTrackNumber) {
   }
 
   resultTrackNumber = nextTrack->trackNumber;
-  FramedSource *trackSource =
-      new OggDemuxedTrack(envir(), resultTrackNumber, *this);
-  fDemuxedTracksTable->Add((char const *)resultTrackNumber, trackSource);
+  FramedSource* trackSource = new OggDemuxedTrack(envir(), resultTrackNumber, *this);
+  fDemuxedTracksTable->Add((char const*)resultTrackNumber, trackSource);
   return trackSource;
 }
 
-FramedSource *OggDemux::newDemuxedTrackByTrackNumber(unsigned trackNumber) {
-  if (trackNumber == 0)
-    return NULL;
+FramedSource* OggDemux::newDemuxedTrackByTrackNumber(unsigned trackNumber) {
+  if (trackNumber == 0) return NULL;
 
-  FramedSource *trackSource = new OggDemuxedTrack(envir(), trackNumber, *this);
-  fDemuxedTracksTable->Add((char const *)trackNumber, trackSource);
+  FramedSource* trackSource = new OggDemuxedTrack(envir(), trackNumber, *this);
+  fDemuxedTracksTable->Add((char const*)trackNumber, trackSource);
   return trackSource;
 }
 
-OggDemuxedTrack *OggDemux::lookupDemuxedTrack(u_int32_t trackNumber) {
-  return (OggDemuxedTrack *)fDemuxedTracksTable->Lookup(
-      (char const *)trackNumber);
+OggDemuxedTrack* OggDemux::lookupDemuxedTrack(u_int32_t trackNumber) {
+  return (OggDemuxedTrack*)fDemuxedTracksTable->Lookup((char const*)trackNumber);
 }
 
-OggDemux::OggDemux(OggFile &ourFile)
-    : Medium(ourFile.envir()), fOurFile(ourFile),
-      fDemuxedTracksTable(HashTable::create(ONE_WORD_HASH_KEYS)),
-      fIter(new OggTrackTableIterator(*fOurFile.fTrackTable)) {
-  FramedSource *fileSource =
-      ByteStreamFileSource::createNew(envir(), ourFile.fileName());
-  fOurParser =
-      new OggFileParser(ourFile, fileSource, handleEndOfFile, this, this);
+OggDemux::OggDemux(OggFile& ourFile)
+  : Medium(ourFile.envir()),
+    fOurFile(ourFile), fDemuxedTracksTable(HashTable::create(ONE_WORD_HASH_KEYS)),
+    fIter(new OggTrackTableIterator(*fOurFile.fTrackTable)) {
+  FramedSource* fileSource = ByteStreamFileSource::createNew(envir(), ourFile.fileName());
+  fOurParser = new OggFileParser(ourFile, fileSource, handleEndOfFile, this, this);
 }
 
 OggDemux::~OggDemux() {
@@ -287,8 +300,7 @@ OggDemux::~OggDemux() {
   handleEndOfFile();
 
   // Then delete our table of "OggDemuxedTrack"s
-  // - but not the "OggDemuxedTrack"s themselves; that should have already
-  // happened:
+  // - but not the "OggDemuxedTrack"s themselves; that should have already happened:
   delete fDemuxedTracksTable;
 
   delete fIter;
@@ -297,41 +309,40 @@ OggDemux::~OggDemux() {
 }
 
 void OggDemux::removeTrack(u_int32_t trackNumber) {
-  fDemuxedTracksTable->Remove((char const *)trackNumber);
+  fDemuxedTracksTable->Remove((char const*)trackNumber);
   if (fDemuxedTracksTable->numEntries() == 0) {
     // We no longer have any demuxed tracks, so delete ourselves now:
-    delete this;
+    Medium::close(this);
   }
 }
 
-void OggDemux::continueReading() { fOurParser->continueParsing(); }
+void OggDemux::continueReading() {
+  fOurParser->continueParsing();
+}
 
-void OggDemux::handleEndOfFile(void *clientData) {
-  ((OggDemux *)clientData)->handleEndOfFile();
+void OggDemux::handleEndOfFile(void* clientData) {
+  ((OggDemux*)clientData)->handleEndOfFile();
 }
 
 void OggDemux::handleEndOfFile() {
-  // Iterate through all of our 'demuxed tracks', handling 'end of input' on
-  // each one. Hack: Because this can cause the hash table to get modified
-  // underneath us, we don't call the handlers until after we've first iterated
-  // through all of the tracks.
+  // Iterate through all of our 'demuxed tracks', handling 'end of input' on each one.
+  // Hack: Because this can cause the hash table to get modified underneath us,
+  // we don't call the handlers until after we've first iterated through all of the tracks.
   unsigned numTracks = fDemuxedTracksTable->numEntries();
-  if (numTracks == 0)
-    return;
-  OggDemuxedTrack **tracks = new OggDemuxedTrack *[numTracks];
+  if (numTracks == 0) return;
+  OggDemuxedTrack** tracks = new OggDemuxedTrack*[numTracks];
 
-  HashTable::Iterator *iter = HashTable::Iterator::create(*fDemuxedTracksTable);
+  HashTable::Iterator* iter = HashTable::Iterator::create(*fDemuxedTracksTable);
   unsigned i;
-  char const *trackNumber;
+  char const* trackNumber;
 
   for (i = 0; i < numTracks; ++i) {
-    tracks[i] = (OggDemuxedTrack *)iter->next(trackNumber);
+    tracks[i] = (OggDemuxedTrack*)iter->next(trackNumber);
   }
   delete iter;
 
   for (i = 0; i < numTracks; ++i) {
-    if (tracks[i] == NULL)
-      continue; // sanity check; shouldn't happen
+    if (tracks[i] == NULL) continue; // sanity check; shouldn't happen
     tracks[i]->handleClosure();
   }
 

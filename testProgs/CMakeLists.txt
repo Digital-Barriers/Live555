@@ -1,10 +1,5 @@
 function(live555_add_test_executable _target)
     add_executable(${_target} ${ARGN})
-#    target_link_libraries(${_target} PRIVATE
-#            liveMedia
-#            BasicUsageEnvironment
-#            $<$<TARGET_EXISTS:EpollTaskScheduler>:EpollTaskScheduler>
-#            )
     set_target_properties(${_target} PROPERTIES FOLDER "live555/testProgs")
     target_link_libraries(${_target} live555)
 endfunction()
@@ -31,7 +26,6 @@ live555_add_test_executable(testH264VideoStreamer testH264VideoStreamer.cpp)
 live555_add_test_executable(testOnDemandRTSPServer testOnDemandRTSPServer.cpp)
 live555_add_test_executable(testOnvifMetadataStreamer testOnvifMetadataStreamer.cpp)
 
-# TODO: No epoll here yet
 live555_add_test_executable(testH264VideoToHLSSegments testH264VideoToHLSSegments.cpp)
 live555_add_test_executable(MPEG2TransportStreamIndexer MPEG2TransportStreamIndexer.cpp)
 live555_add_test_executable(registerRTSPStream registerRTSPStream.cpp)

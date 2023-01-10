@@ -14,17 +14,20 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // A media track, demultiplexed from a MPEG Transport Stream file
 // Implementation
 
 #include "MPEG2TransportStreamParser.hh"
 
-MPEG2TransportStreamDemuxedTrack ::MPEG2TransportStreamDemuxedTrack(
-    MPEG2TransportStreamParser &ourParser, u_int16_t pid)
-    : FramedSource(ourParser.envir()), fOurParser(ourParser), fPID(pid) {}
+MPEG2TransportStreamDemuxedTrack
+::MPEG2TransportStreamDemuxedTrack(MPEG2TransportStreamParser& ourParser, u_int16_t pid)
+  : FramedSource(ourParser.envir()),
+    fOurParser(ourParser), fPID(pid) {
+}
 
-MPEG2TransportStreamDemuxedTrack::~MPEG2TransportStreamDemuxedTrack() {}
+MPEG2TransportStreamDemuxedTrack::~MPEG2TransportStreamDemuxedTrack() {
+}
 
 void MPEG2TransportStreamDemuxedTrack::doGetNextFrame() {
   fOurParser.continueParsing();

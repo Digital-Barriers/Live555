@@ -13,33 +13,31 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
-// Copyright (c) 1996-2020, Live Networks, Inc.  All rights reserved
+// Copyright (c) 1996-2022, Live Networks, Inc.  All rights reserved
 // A SIP client test program that opens a SIP URL argument,
 // and extracts the data from each incoming RTP stream.
 
-#include "SIPClient.hh"
 #include "playCommon.hh"
+#include "SIPClient.hh"
 
-static char *getLine(char *startOfLine) {
+static char* getLine(char* startOfLine) {
   // returns the start of the next line, or NULL if none
-  for (char *ptr = startOfLine; *ptr != '\0'; ++ptr) {
+  for (char* ptr = startOfLine; *ptr != '\0'; ++ptr) {
     if (*ptr == '\r' || *ptr == '\n') {
       // We found the end of the line
       *ptr++ = '\0';
-      if (*ptr == '\n')
-        ++ptr;
+      if (*ptr == '\n') ++ptr;
       return ptr;
     }
   }
-
+  
   return NULL;
 }
 
-SIPClient *ourSIPClient = NULL;
-Medium *createClient(UsageEnvironment &env, char const * /*url*/,
-                     int verbosityLevel, char const *applicationName) {
+SIPClient* ourSIPClient = NULL;
+Medium* createClient(UsageEnvironment& env, char const* /*url*/, int verbosityLevel, char const* applicationName) {
   // First, trim any directory prefixes from "applicationName":
-  char const *suffix = &applicationName[strlen(applicationName)];
+  char const* suffix = &applicationName[strlen(applicationName)];
   while (suffix != applicationName) {
     if (*suffix == '/' || *suffix == '\\') {
       applicationName = ++suffix;
@@ -49,35 +47,32 @@ Medium *createClient(UsageEnvironment &env, char const * /*url*/,
   }
 
   extern unsigned char desiredAudioRTPPayloadFormat;
-  extern char *mimeSubtype;
-  return ourSIPClient =
-             SIPClient::createNew(env, desiredAudioRTPPayloadFormat,
-                                  mimeSubtype, verbosityLevel, applicationName);
+  extern char* mimeSubtype;
+  return ourSIPClient = SIPClient::createNew(env, desiredAudioRTPPayloadFormat, mimeSubtype, verbosityLevel, applicationName);
 }
 
 // The followign function is implemented, but is not used for "playSIP":
-void assignClient(Medium * /*client*/) {}
+void assignClient(Medium* /*client*/) {
+}
 
-void getOptions(RTSPClient::responseHandler *afterFunc) {
+void getOptions(RTSPClient::responseHandler* afterFunc) { 
   ourSIPClient->envir().setResultMsg("NOT SUPPORTED IN CLIENT");
   afterFunc(NULL, -1, strDup(ourSIPClient->envir().getResultMsg()));
 }
 
-void getSDPDescription(RTSPClient::responseHandler *afterFunc) {
-  extern char *proxyServerName;
+void getSDPDescription(RTSPClient::responseHandler* afterFunc) {
+  extern char* proxyServerName;
   if (proxyServerName != NULL) {
     // Tell the SIP client about the proxy:
     NetAddressList addresses(proxyServerName);
     if (addresses.numAddresses() == 0) {
-      ourSIPClient->envir() << "Failed to find network address for \""
-                            << proxyServerName << "\"\n";
+      ourSIPClient->envir() << "Failed to find network address for \"" << proxyServerName << "\"\n";
     } else {
-      NetAddress address = *(addresses.firstAddress());
-      unsigned proxyServerAddress // later, allow for IPv6 #####
-          = *(unsigned *)(address.data());
+      struct sockaddr_storage proxyServerAddress;
+      copyAddress(proxyServerAddress, addresses.firstAddress());
+
       extern unsigned short proxyServerPortNum;
-      if (proxyServerPortNum == 0)
-        proxyServerPortNum = 5060; // default
+      if (proxyServerPortNum == 0) proxyServerPortNum = 5060; // default
 
       ourSIPClient->setProxyServer(proxyServerAddress, proxyServerPortNum);
     }
@@ -85,16 +80,13 @@ void getSDPDescription(RTSPClient::responseHandler *afterFunc) {
 
   extern unsigned short desiredPortNum;
   unsigned short clientStartPortNum = desiredPortNum;
-  if (clientStartPortNum == 0)
-    clientStartPortNum = 8000; // default
+  if (clientStartPortNum == 0) clientStartPortNum = 8000; // default
   ourSIPClient->setClientStartPortNum(clientStartPortNum);
 
-  extern char const *streamURL;
-  char const *username =
-      ourAuthenticator == NULL ? NULL : ourAuthenticator->username();
-  char const *password =
-      ourAuthenticator == NULL ? NULL : ourAuthenticator->password();
-  char *result;
+  extern char const* streamURL;
+  char const* username = ourAuthenticator == NULL ? NULL : ourAuthenticator->username();
+  char const* password = ourAuthenticator == NULL ? NULL : ourAuthenticator->password();
+  char* result;
   if (username != NULL && password != NULL) {
     result = ourSIPClient->inviteWithPassword(streamURL, username, password);
   } else {
@@ -105,16 +97,13 @@ void getSDPDescription(RTSPClient::responseHandler *afterFunc) {
   afterFunc(NULL, resultCode, strDup(result));
 }
 
-void setupSubsession(MediaSubsession *subsession, Boolean /*streamUsingTCP*/,
-                     Boolean /*forceMulticastOnUnspecified*/,
-                     RTSPClient::responseHandler *afterFunc) {
+void setupSubsession(MediaSubsession* subsession, Boolean /*streamUsingTCP*/, Boolean /*forceMulticastOnUnspecified*/,RTSPClient::responseHandler* afterFunc) {
   subsession->setSessionId("mumble"); // anything that's non-NULL will work
 
-  ////////// BEGIN hack code that should really be implemented in SIPClient
-  /////////////
+  ////////// BEGIN hack code that should really be implemented in SIPClient //////////
   // Parse the "Transport:" header parameters:
   // We do not send audio, but we need port for RTCP
-  char *serverAddressStr;
+  char* serverAddressStr;
   portNumBits serverPortNum;
   unsigned char rtpChannelId, rtcpChannelId;
 
@@ -122,10 +111,10 @@ void setupSubsession(MediaSubsession *subsession, Boolean /*streamUsingTCP*/,
   serverPortNum = 0;
   serverAddressStr = NULL;
 
-  char *sdp = strDup(ourSIPClient->getInviteSdpReply());
+  char* sdp = strDup(ourSIPClient->getInviteSdpReply());
 
-  char *lineStart;
-  char *nextLineStart = sdp;
+  char* lineStart;
+  char* nextLineStart = sdp;
   while (1) {
     lineStart = nextLineStart;
     if (lineStart == NULL) {
@@ -133,7 +122,7 @@ void setupSubsession(MediaSubsession *subsession, Boolean /*streamUsingTCP*/,
     }
     nextLineStart = getLine(lineStart);
 
-    char *toTagStr = strDupSize(lineStart);
+    char* toTagStr = strDupSize(lineStart);
 
     if (sscanf(lineStart, "m=audio %[^/\r\n]", toTagStr) == 1) {
       sscanf(toTagStr, "%hu", &serverPortNum);
@@ -143,7 +132,7 @@ void setupSubsession(MediaSubsession *subsession, Boolean /*streamUsingTCP*/,
     delete[] toTagStr;
   }
 
-  if (sdp != NULL) {
+  if(sdp != NULL) {
     delete[] sdp;
   }
 
@@ -153,21 +142,18 @@ void setupSubsession(MediaSubsession *subsession, Boolean /*streamUsingTCP*/,
   subsession->rtpChannelId = rtpChannelId;
   subsession->rtcpChannelId = rtcpChannelId;
 
-  // Set the RTP and RTCP sockets' destination address and port from the
-  // information in the SETUP response (if present):
-  netAddressBits destAddress = subsession->connectionEndpointAddress();
-  if (destAddress != 0) {
+  // Set the RTP and RTCP sockets' destination address and port from the information in the SETUP response (if present):
+  struct sockaddr_storage destAddress;
+  subsession->getConnectionEndpointAddress(destAddress);
+  if (!addressIsNull(destAddress)) {
     subsession->setDestinations(destAddress);
   }
-  ////////// END hack code that should really be implemented in SIPClient
-  /////////////
+  ////////// END hack code that should really be implemented in SIPClient //////////
 
   afterFunc(NULL, 0, NULL);
 }
 
-void startPlayingSession(MediaSession * /*session*/, double /*start*/,
-                         double /*end*/, float /*scale*/,
-                         RTSPClient::responseHandler *afterFunc) {
+void startPlayingSession(MediaSession* /*session*/, double /*start*/, double /*end*/, float /*scale*/, RTSPClient::responseHandler* afterFunc) {
   if (ourSIPClient->sendACK()) {
     //##### This isn't quite right, because we should really be allowing
     //##### for the possibility of this ACK getting lost, by retransmitting
@@ -177,14 +163,11 @@ void startPlayingSession(MediaSession * /*session*/, double /*start*/,
     afterFunc(NULL, -1, strDup(ourSIPClient->envir().getResultMsg()));
   }
 }
-void startPlayingSession(MediaSession * /*session*/, const char * /*start*/,
-                         const char * /*end*/, float /*scale*/,
-                         RTSPClient::responseHandler *afterFunc) {
-  startPlayingSession(NULL, (double)0, (double)0, 0, afterFunc);
+void startPlayingSession(MediaSession* /*session*/, const char* /*start*/, const char* /*end*/, float /*scale*/, RTSPClient::responseHandler* afterFunc) {
+	startPlayingSession(NULL,(double)0,(double)0,0,afterFunc);
 }
 
-void tearDownSession(MediaSession * /*session*/,
-                     RTSPClient::responseHandler *afterFunc) {
+void tearDownSession(MediaSession* /*session*/, RTSPClient::responseHandler* afterFunc) {
   if (ourSIPClient == NULL || ourSIPClient->sendBYE()) {
     afterFunc(NULL, 0, NULL);
   } else {
@@ -192,11 +175,11 @@ void tearDownSession(MediaSession * /*session*/,
   }
 }
 
-void setUserAgentString(char const *userAgentString) {
+void setUserAgentString(char const* userAgentString) {
   ourSIPClient->setUserAgentString(userAgentString);
 }
 
 Boolean allowProxyServers = True;
 Boolean controlConnectionUsesTCP = False;
 Boolean supportCodecSelection = True;
-char const *clientProtocolName = "SIP";
+char const* clientProtocolName = "SIP";

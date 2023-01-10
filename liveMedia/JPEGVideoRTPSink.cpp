@@ -14,41 +14,46 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // RTP sink for JPEG video (RFC 2435)
 // Implementation
 
 #include "JPEGVideoRTPSink.hh"
 #include "JPEGVideoSource.hh"
 
-JPEGVideoRTPSink ::JPEGVideoRTPSink(UsageEnvironment &env, Groupsock *RTPgs)
-    : VideoRTPSink(env, RTPgs, 26, 90000, "JPEG") {}
+JPEGVideoRTPSink
+::JPEGVideoRTPSink(UsageEnvironment& env, Groupsock* RTPgs)
+  : VideoRTPSink(env, RTPgs, 26, 90000, "JPEG") {
+}
 
-JPEGVideoRTPSink::~JPEGVideoRTPSink() {}
+JPEGVideoRTPSink::~JPEGVideoRTPSink() {
+}
 
-JPEGVideoRTPSink *JPEGVideoRTPSink::createNew(UsageEnvironment &env,
-                                              Groupsock *RTPgs) {
+JPEGVideoRTPSink*
+JPEGVideoRTPSink::createNew(UsageEnvironment& env, Groupsock* RTPgs) {
   return new JPEGVideoRTPSink(env, RTPgs);
 }
 
-Boolean JPEGVideoRTPSink::sourceIsCompatibleWithUs(MediaSource &source) {
+Boolean JPEGVideoRTPSink::sourceIsCompatibleWithUs(MediaSource& source) {
   return source.isJPEGVideoSource();
 }
 
-Boolean JPEGVideoRTPSink ::frameCanAppearAfterPacketStart(
-    unsigned char const * /*frameStart*/, unsigned /*numBytesInFrame*/) const {
+Boolean JPEGVideoRTPSink
+::frameCanAppearAfterPacketStart(unsigned char const* /*frameStart*/,
+				 unsigned /*numBytesInFrame*/) const {
   // A packet can contain only one frame
   return False;
 }
 
-void JPEGVideoRTPSink ::doSpecialFrameHandling(
-    unsigned fragmentationOffset, unsigned char * /*frameStart*/,
-    unsigned /*numBytesInFrame*/, struct timeval framePresentationTime,
-    unsigned numRemainingBytes) {
+void JPEGVideoRTPSink
+::doSpecialFrameHandling(unsigned fragmentationOffset,
+			 unsigned char* /*frameStart*/,
+			 unsigned /*numBytesInFrame*/,
+			 struct timeval framePresentationTime,
+			 unsigned numRemainingBytes) {
   // Our source is known to be a JPEGVideoSource
-  JPEGVideoSource *source = (JPEGVideoSource *)fSource;
-  if (source == NULL)
-    return; // sanity check
+  JPEGVideoSource* source = (JPEGVideoSource*)fSource;
+  if (source == NULL) return; // sanity check
 
   u_int8_t mainJPEGHeader[8]; // the special header
   u_int8_t const type = source->type();
@@ -67,42 +72,39 @@ void JPEGVideoRTPSink ::doSpecialFrameHandling(
   if (type >= 64 && type <= 127) {
     // There is also a Restart Marker Header:
     restartMarkerHeaderSize = 4;
-    u_int16_t const restartInterval =
-        source->restartInterval(); // should be non-zero
+    u_int16_t const restartInterval = source->restartInterval(); // should be non-zero
 
     u_int8_t restartMarkerHeader[4];
-    restartMarkerHeader[0] = restartInterval >> 8;
-    restartMarkerHeader[1] = restartInterval & 0xFF;
-    restartMarkerHeader[2] = restartMarkerHeader[3] =
-        0xFF; // F=L=1; Restart Count = 0x3FFF
+    restartMarkerHeader[0] = restartInterval>>8;
+    restartMarkerHeader[1] = restartInterval&0xFF;
+    restartMarkerHeader[2] = restartMarkerHeader[3] = 0xFF; // F=L=1; Restart Count = 0x3FFF
 
     setSpecialHeaderBytes(restartMarkerHeader, restartMarkerHeaderSize,
-                          sizeof mainJPEGHeader /* start position */);
+                          sizeof mainJPEGHeader/* start position */);
   }
 
   if (fragmentationOffset == 0 && source->qFactor() >= 128) {
     // There is also a Quantization Header:
     u_int8_t precision;
     u_int16_t length;
-    u_int8_t const *quantizationTables =
-        source->quantizationTables(precision, length);
+    u_int8_t const* quantizationTables
+      = source->quantizationTables(precision, length);
 
     unsigned const quantizationHeaderSize = 4 + length;
-    u_int8_t *quantizationHeader = new u_int8_t[quantizationHeaderSize];
+    u_int8_t* quantizationHeader = new u_int8_t[quantizationHeaderSize];
 
     quantizationHeader[0] = 0; // MBZ
     quantizationHeader[1] = precision;
     quantizationHeader[2] = length >> 8;
-    quantizationHeader[3] = length & 0xFF;
+    quantizationHeader[3] = length&0xFF;
     if (quantizationTables != NULL) { // sanity check
       for (u_int16_t i = 0; i < length; ++i) {
-        quantizationHeader[4 + i] = quantizationTables[i];
+	quantizationHeader[4+i] = quantizationTables[i];
       }
     }
 
     setSpecialHeaderBytes(quantizationHeader, quantizationHeaderSize,
-                          sizeof mainJPEGHeader +
-                              restartMarkerHeaderSize /* start position */);
+			  sizeof mainJPEGHeader + restartMarkerHeaderSize/* start position */);
     delete[] quantizationHeader;
   }
 
@@ -116,11 +118,11 @@ void JPEGVideoRTPSink ::doSpecialFrameHandling(
   setTimestamp(framePresentationTime);
 }
 
+
 unsigned JPEGVideoRTPSink::specialHeaderSize() const {
   // Our source is known to be a JPEGVideoSource
-  JPEGVideoSource *source = (JPEGVideoSource *)fSource;
-  if (source == NULL)
-    return 0; // sanity check
+  JPEGVideoSource* source = (JPEGVideoSource*)fSource;
+  if (source == NULL) return 0; // sanity check
 
   unsigned headerSize = 8; // by default
 

@@ -13,7 +13,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
-// Copyright (c) 1996-2020, Live Networks, Inc.  All rights reserved
+// Copyright (c) 1996-2022, Live Networks, Inc.  All rights reserved
 //	Help by Carlo Bonamico to get working for Windows
 // Delay queue
 // Implementation
@@ -25,32 +25,32 @@ static const int MILLION = 1000000;
 
 ///// Timeval /////
 
-int Timeval::operator>=(const Timeval &arg2) const {
-  return seconds() > arg2.seconds() ||
-         (seconds() == arg2.seconds() && useconds() >= arg2.useconds());
+int Timeval::operator>=(const Timeval& arg2) const {
+  return seconds() > arg2.seconds()
+    || (seconds() == arg2.seconds()
+	&& useconds() >= arg2.useconds());
 }
 
-void Timeval::operator+=(const DelayInterval &arg2) {
-  secs() += arg2.seconds();
-  usecs() += arg2.useconds();
+void Timeval::operator+=(const DelayInterval& arg2) {
+  secs() += arg2.seconds(); usecs() += arg2.useconds();
   if (useconds() >= MILLION) {
     usecs() -= MILLION;
     ++secs();
   }
 }
 
-void Timeval::operator-=(const DelayInterval &arg2) {
-  secs() -= arg2.seconds();
-  usecs() -= arg2.useconds();
+void Timeval::operator-=(const DelayInterval& arg2) {
+  secs() -= arg2.seconds(); usecs() -= arg2.useconds();
   if ((int)useconds() < 0) {
     usecs() += MILLION;
     --secs();
   }
   if ((int)seconds() < 0)
     secs() = usecs() = 0;
+
 }
 
-DelayInterval operator-(const Timeval &arg1, const Timeval &arg2) {
+DelayInterval operator-(const Timeval& arg1, const Timeval& arg2) {
   time_base_seconds secs = arg1.seconds() - arg2.seconds();
   time_base_seconds usecs = arg1.useconds() - arg2.useconds();
 
@@ -64,62 +64,69 @@ DelayInterval operator-(const Timeval &arg1, const Timeval &arg2) {
     return DelayInterval(secs, usecs);
 }
 
+
 ///// DelayInterval /////
 
-DelayInterval operator*(short arg1, const DelayInterval &arg2) {
-  time_base_seconds result_seconds = arg1 * arg2.seconds();
-  time_base_seconds result_useconds = arg1 * arg2.useconds();
+DelayInterval operator*(short arg1, const DelayInterval& arg2) {
+  time_base_seconds result_seconds = arg1*arg2.seconds();
+  time_base_seconds result_useconds = arg1*arg2.useconds();
 
-  time_base_seconds carry = result_useconds / MILLION;
-  result_useconds -= carry * MILLION;
+  time_base_seconds carry = result_useconds/MILLION;
+  result_useconds -= carry*MILLION;
   result_seconds += carry;
 
   return DelayInterval(result_seconds, result_useconds);
 }
 
 #ifndef INT_MAX
-#define INT_MAX 0x7FFFFFFF
+#define INT_MAX	0x7FFFFFFF
 #endif
 const DelayInterval DELAY_ZERO(0, 0);
 const DelayInterval DELAY_SECOND(1, 0);
-const DelayInterval DELAY_MINUTE = 60 * DELAY_SECOND;
-const DelayInterval DELAY_HOUR = 60 * DELAY_MINUTE;
-const DelayInterval DELAY_DAY = 24 * DELAY_HOUR;
-const DelayInterval ETERNITY(INT_MAX, MILLION - 1);
+const DelayInterval DELAY_MINUTE = 60*DELAY_SECOND;
+const DelayInterval DELAY_HOUR = 60*DELAY_MINUTE;
+const DelayInterval DELAY_DAY = 24*DELAY_HOUR;
+const DelayInterval ETERNITY(INT_MAX, MILLION-1);
 // used internally to make the implementation work
+
 
 ///// DelayQueueEntry /////
 
 intptr_t DelayQueueEntry::tokenCounter = 0;
 
 DelayQueueEntry::DelayQueueEntry(DelayInterval delay)
-    : fDeltaTimeRemaining(delay) {
+  : fDeltaTimeRemaining(delay) {
   fNext = fPrev = this;
   fToken = ++tokenCounter;
 }
 
-DelayQueueEntry::~DelayQueueEntry() {}
+DelayQueueEntry::~DelayQueueEntry() {
+}
 
-void DelayQueueEntry::handleTimeout() { delete this; }
+void DelayQueueEntry::handleTimeout() {
+  delete this;
+}
+
 
 ///// DelayQueue /////
 
-DelayQueue::DelayQueue() : DelayQueueEntry(ETERNITY) {
+DelayQueue::DelayQueue()
+  : DelayQueueEntry(ETERNITY) {
   fLastSyncTime = TimeNow();
 }
 
 DelayQueue::~DelayQueue() {
   while (fNext != this) {
-    DelayQueueEntry *entryToRemove = fNext;
+    DelayQueueEntry* entryToRemove = fNext;
     removeEntry(entryToRemove);
     delete entryToRemove;
   }
 }
 
-void DelayQueue::addEntry(DelayQueueEntry *newEntry) {
+void DelayQueue::addEntry(DelayQueueEntry* newEntry) {
   synchronize();
 
-  DelayQueueEntry *cur = head();
+  DelayQueueEntry* cur = head();
   while (newEntry->fDeltaTimeRemaining >= cur->fDeltaTimeRemaining) {
     newEntry->fDeltaTimeRemaining -= cur->fDeltaTimeRemaining;
     cur = cur->fNext;
@@ -133,9 +140,8 @@ void DelayQueue::addEntry(DelayQueueEntry *newEntry) {
   cur->fPrev = newEntry->fPrev->fNext = newEntry;
 }
 
-void DelayQueue::updateEntry(DelayQueueEntry *entry, DelayInterval newDelay) {
-  if (entry == NULL)
-    return;
+void DelayQueue::updateEntry(DelayQueueEntry* entry, DelayInterval newDelay) {
+  if (entry == NULL) return;
 
   removeEntry(entry);
   entry->fDeltaTimeRemaining = newDelay;
@@ -143,13 +149,12 @@ void DelayQueue::updateEntry(DelayQueueEntry *entry, DelayInterval newDelay) {
 }
 
 void DelayQueue::updateEntry(intptr_t tokenToFind, DelayInterval newDelay) {
-  DelayQueueEntry *entry = findEntryByToken(tokenToFind);
+  DelayQueueEntry* entry = findEntryByToken(tokenToFind);
   updateEntry(entry, newDelay);
 }
 
-void DelayQueue::removeEntry(DelayQueueEntry *entry) {
-  if (entry == NULL || entry->fNext == NULL)
-    return;
+void DelayQueue::removeEntry(DelayQueueEntry* entry) {
+  if (entry == NULL || entry->fNext == NULL) return;
 
   entry->fNext->fDeltaTimeRemaining += entry->fDeltaTimeRemaining;
   entry->fPrev->fNext = entry->fNext;
@@ -158,38 +163,35 @@ void DelayQueue::removeEntry(DelayQueueEntry *entry) {
   // in case we should try to remove it again
 }
 
-DelayQueueEntry *DelayQueue::removeEntry(intptr_t tokenToFind) {
-  DelayQueueEntry *entry = findEntryByToken(tokenToFind);
+DelayQueueEntry* DelayQueue::removeEntry(intptr_t tokenToFind) {
+  DelayQueueEntry* entry = findEntryByToken(tokenToFind);
   removeEntry(entry);
   return entry;
 }
 
-DelayInterval const &DelayQueue::timeToNextAlarm() {
-  if (head()->fDeltaTimeRemaining == DELAY_ZERO)
-    return DELAY_ZERO; // a common case
+DelayInterval const& DelayQueue::timeToNextAlarm() {
+  if (head()->fDeltaTimeRemaining == DELAY_ZERO) return DELAY_ZERO; // a common case
 
   synchronize();
   return head()->fDeltaTimeRemaining;
 }
 
 void DelayQueue::handleAlarm() {
-  if (head()->fDeltaTimeRemaining != DELAY_ZERO)
-    synchronize();
+  if (head()->fDeltaTimeRemaining != DELAY_ZERO) synchronize();
 
   if (head()->fDeltaTimeRemaining == DELAY_ZERO) {
     // This event is due to be handled:
-    DelayQueueEntry *toRemove = head();
+    DelayQueueEntry* toRemove = head();
     removeEntry(toRemove); // do this first, in case handler accesses queue
 
     toRemove->handleTimeout();
   }
 }
 
-DelayQueueEntry *DelayQueue::findEntryByToken(intptr_t tokenToFind) {
-  DelayQueueEntry *cur = head();
+DelayQueueEntry* DelayQueue::findEntryByToken(intptr_t tokenToFind) {
+  DelayQueueEntry* cur = head();
   while (cur != this) {
-    if (cur->token() == tokenToFind)
-      return cur;
+    if (cur->token() == tokenToFind) return cur;
     cur = cur->fNext;
   }
 
@@ -200,16 +202,15 @@ void DelayQueue::synchronize() {
   // First, figure out how much time has elapsed since the last sync:
   _EventTime timeNow = TimeNow();
   if (timeNow < fLastSyncTime) {
-    // The system clock has apparently gone back in time; reset our sync time
-    // and return:
-    fLastSyncTime = timeNow;
+    // The system clock has apparently gone back in time; reset our sync time and return:
+    fLastSyncTime  = timeNow;
     return;
   }
   DelayInterval timeSinceLastSync = timeNow - fLastSyncTime;
   fLastSyncTime = timeNow;
 
   // Then, adjust the delay queue for any entries whose time is up:
-  DelayQueueEntry *curEntry = head();
+  DelayQueueEntry* curEntry = head();
   while (timeSinceLastSync >= curEntry->fDeltaTimeRemaining) {
     timeSinceLastSync -= curEntry->fDeltaTimeRemaining;
     curEntry->fDeltaTimeRemaining = DELAY_ZERO;
@@ -217,6 +218,7 @@ void DelayQueue::synchronize() {
   }
   curEntry->fDeltaTimeRemaining -= timeSinceLastSync;
 }
+
 
 ///// _EventTime /////
 

@@ -7,6 +7,5 @@ add_executable(live555MediaServer
 target_link_libraries(live555MediaServer PRIVATE
         liveMedia
         BasicUsageEnvironment
-        $<$<TARGET_EXISTS:EpollTaskScheduler>:EpollTaskScheduler>
         )
 set_target_properties(live555MediaServer PROPERTIES FOLDER "live555/Servers")

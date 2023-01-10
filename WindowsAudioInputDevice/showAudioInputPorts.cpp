@@ -13,23 +13,23 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
-// Copyright (c) 1996-2020, Live Networks, Inc.  All rights reserved
+// Copyright (c) 1996-2022, Live Networks, Inc.  All rights reserved
 // A program that prints out this computer's audio input ports
 
 #include "AudioInputDevice.hh"
 #include <stdio.h>
 
-int main(int argc, char **argv) {
-  AudioPortNames *portNames = AudioInputDevice::getPortNames();
-  if (portNames == NULL) {
-    fprintf(stderr, "AudioInputDevice::getPortNames() failed!\n");
-    exit(1);
-  }
+int main(int argc, char** argv) {
+	AudioPortNames* portNames = AudioInputDevice::getPortNames();
+	if (portNames == NULL) {
+		fprintf(stderr, "AudioInputDevice::getPortNames() failed!\n");
+		exit(1);
+	}
 
-  printf("%d available audio input ports:\n", portNames->numPorts);
-  for (unsigned i = 0; i < portNames->numPorts; ++i) {
-    printf("%d\t%s\n", i, portNames->portName[i]);
-  }
+	printf("%d available audio input ports:\n", portNames->numPorts);
+	for (unsigned i = 0; i < portNames->numPorts; ++i) {
+		printf("%d\t%s\n", i, portNames->portName[i]);
+	}
 
   return 0;
 }

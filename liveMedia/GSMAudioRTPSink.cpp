@@ -14,24 +14,27 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // RTP sink for GSM audio
 // Implementation
 
 #include "GSMAudioRTPSink.hh"
 
-GSMAudioRTPSink::GSMAudioRTPSink(UsageEnvironment &env, Groupsock *RTPgs)
-    : AudioRTPSink(env, RTPgs, 3, 8000, "GSM") {}
+GSMAudioRTPSink::GSMAudioRTPSink(UsageEnvironment& env, Groupsock* RTPgs)
+  : AudioRTPSink(env, RTPgs, 3, 8000, "GSM") {
+}
 
-GSMAudioRTPSink::~GSMAudioRTPSink() {}
+GSMAudioRTPSink::~GSMAudioRTPSink() {
+}
 
-GSMAudioRTPSink *GSMAudioRTPSink::createNew(UsageEnvironment &env,
-                                            Groupsock *RTPgs) {
+GSMAudioRTPSink*
+GSMAudioRTPSink::createNew(UsageEnvironment& env, Groupsock* RTPgs) {
   return new GSMAudioRTPSink(env, RTPgs);
 }
 
-Boolean GSMAudioRTPSink ::frameCanAppearAfterPacketStart(
-    unsigned char const * /*frameStart*/, unsigned /*numBytesInFrame*/) const {
+Boolean GSMAudioRTPSink
+::frameCanAppearAfterPacketStart(unsigned char const* /*frameStart*/,
+				 unsigned /*numBytesInFrame*/) const {
   // Allow at most 5 frames in a single packet:
   return numFramesUsedSoFar() < 5;
 }

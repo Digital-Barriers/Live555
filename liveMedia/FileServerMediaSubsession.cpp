@@ -14,20 +14,21 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // A 'ServerMediaSubsession' object that creates new, unicast, "RTPSink"s
 // on demand, from a file.
 // Implementation
 
 #include "FileServerMediaSubsession.hh"
 
-FileServerMediaSubsession ::FileServerMediaSubsession(UsageEnvironment &env,
-                                                      char const *fileName,
-                                                      Boolean reuseFirstSource)
-    : OnDemandServerMediaSubsession(env, reuseFirstSource), fFileSize(0) {
+FileServerMediaSubsession
+::FileServerMediaSubsession(UsageEnvironment& env, char const* fileName,
+			    Boolean reuseFirstSource)
+  : OnDemandServerMediaSubsession(env, reuseFirstSource),
+    fFileSize(0) {
   fFileName = strDup(fileName);
 }
 
 FileServerMediaSubsession::~FileServerMediaSubsession() {
-  delete[](char *) fFileName;
+  delete[] (char*)fFileName;
 }

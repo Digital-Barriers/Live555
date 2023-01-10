@@ -13,57 +13,54 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
-// Copyright (c) 1996-2020, Live Networks, Inc.  All rights reserved
+// Copyright (c) 1996-2022, Live Networks, Inc.  All rights reserved
 // A test program that splits a MPEG Transport Stream input (on 'stdin')
 // into separate video and audio output files.
 // main program
 
-#include <BasicUsageEnvironment.hh>
 #include <liveMedia.hh>
+#include <BasicUsageEnvironment.hh>
 
-UsageEnvironment *env;
-char const *programName;
-char const *inputFileName = "stdin";
-MPEG2TransportStreamDemux *baseDemultiplexor = NULL;
+UsageEnvironment* env;
+char const* programName;
+char const* inputFileName = "stdin";
+MPEG2TransportStreamDemux* baseDemultiplexor = NULL;
 
 void usage() {
-  *env << "usage: " << programName
-       << " takes no arguments (it reads from \"stdin\")\n";
+  *env << "usage: " << programName << " takes no arguments (it reads from \"stdin\")\n";
   exit(1);
 }
 
-void afterReading(void *);
+void afterReading(void*);
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   // Begin by setting up our usage environment:
-  TaskScheduler *scheduler = BasicTaskScheduler::createNew();
+  TaskScheduler* scheduler = BasicTaskScheduler::createNew();
   env = BasicUsageEnvironment::createNew(*scheduler);
 
   // Parse the command line:
   programName = argv[0];
-  if (argc != 1)
-    usage();
+  if (argc != 1) usage();
 
   // Open the input file as a 'byte-stream file source':
-  ByteStreamFileSource *inputSource =
-      ByteStreamFileSource::createNew(*env, inputFileName);
+  ByteStreamFileSource* inputSource
+    = ByteStreamFileSource::createNew(*env, inputFileName);
   if (inputSource == NULL) {
     *env << "Unable to open file \"" << inputFileName
-         << "\" as a byte-stream file source\n";
+	 << "\" as a byte-stream file source\n";
     exit(1);
   }
 
-  // Create a demultiplexor that reads from that source, creating new
-  // 'demultiplexed tracks' as they appear:
-  baseDemultiplexor = MPEG2TransportStreamDemux::createNew(*env, inputSource,
-                                                           afterReading, NULL);
+  // Create a demultiplexor that reads from that source, creating new 'demultiplexed tracks'
+  // as they appear:
+  baseDemultiplexor = MPEG2TransportStreamDemux::createNew(*env, inputSource, afterReading, NULL);
 
   env->taskScheduler().doEventLoop(); // does not return
 
   return 0; // only to prevent compiler warning
 }
 
-void afterReading(void * /*clientData*/) {
+void afterReading(void* /*clientData*/) {
   *env << "...done\n";
   exit(0);
 }

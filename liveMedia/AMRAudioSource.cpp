@@ -14,19 +14,25 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // A source object for AMR audio sources
 // Implementation
 
 #include "AMRAudioSource.hh"
 
-AMRAudioSource::AMRAudioSource(UsageEnvironment &env, Boolean isWideband,
-                               unsigned numChannels)
-    : FramedSource(env), fIsWideband(isWideband), fNumChannels(numChannels),
-      fLastFrameHeader(0) {}
+AMRAudioSource::AMRAudioSource(UsageEnvironment& env,
+			       Boolean isWideband, unsigned numChannels)
+  : FramedSource(env),
+    fIsWideband(isWideband), fNumChannels(numChannels), fLastFrameHeader(0) {
+}
 
-AMRAudioSource::~AMRAudioSource() {}
+AMRAudioSource::~AMRAudioSource() {
+}
 
-char const *AMRAudioSource::MIMEtype() const { return "audio/AMR"; }
+char const* AMRAudioSource::MIMEtype() const {
+  return "audio/AMR";
+}
 
-Boolean AMRAudioSource::isAMRAudioSource() const { return True; }
+Boolean AMRAudioSource::isAMRAudioSource() const {
+  return True;
+}

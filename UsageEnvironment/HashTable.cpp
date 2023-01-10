@@ -13,35 +13,37 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // Generic Hash Table
 // Implementation
 
 #include "HashTable.hh"
 
-HashTable::HashTable() {}
+HashTable::HashTable() {
+}
 
-HashTable::~HashTable() {}
+HashTable::~HashTable() {
+}
 
-HashTable::Iterator::Iterator() {}
+HashTable::Iterator::Iterator() {
+}
 
 HashTable::Iterator::~Iterator() {}
 
-void *HashTable::RemoveNext() {
-  Iterator *iter = Iterator::create(*this);
-  char const *key;
-  void *removedValue = iter->next(key);
-  if (removedValue != 0)
-    Remove(key);
+void* HashTable::RemoveNext() {
+  Iterator* iter = Iterator::create(*this);
+  char const* key;
+  void* removedValue = iter->next(key);
+  if (removedValue != 0) Remove(key);
 
   delete iter;
   return removedValue;
 }
 
-void *HashTable::getFirst() {
-  Iterator *iter = Iterator::create(*this);
-  char const *key;
-  void *firstValue = iter->next(key);
+void* HashTable::getFirst() {
+  Iterator* iter = Iterator::create(*this);
+  char const* key;
+  void* firstValue = iter->next(key);
 
   delete iter;
   return firstValue;

@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // AMR Audio File sinks
 // Implementation
 
@@ -24,21 +24,22 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 ////////// AMRAudioFileSink //////////
 
-AMRAudioFileSink ::AMRAudioFileSink(UsageEnvironment &env, FILE *fid,
-                                    unsigned bufferSize,
-                                    char const *perFrameFileNamePrefix)
-    : FileSink(env, fid, bufferSize, perFrameFileNamePrefix),
-      fHaveWrittenHeader(False) {}
+AMRAudioFileSink
+::AMRAudioFileSink(UsageEnvironment& env, FILE* fid, unsigned bufferSize,
+		   char const* perFrameFileNamePrefix)
+  : FileSink(env, fid, bufferSize, perFrameFileNamePrefix),
+    fHaveWrittenHeader(False) {
+}
 
-AMRAudioFileSink::~AMRAudioFileSink() {}
+AMRAudioFileSink::~AMRAudioFileSink() {
+}
 
-AMRAudioFileSink *AMRAudioFileSink::createNew(UsageEnvironment &env,
-                                              char const *fileName,
-                                              unsigned bufferSize,
-                                              Boolean oneFilePerFrame) {
+AMRAudioFileSink*
+AMRAudioFileSink::createNew(UsageEnvironment& env, char const* fileName,
+			    unsigned bufferSize, Boolean oneFilePerFrame) {
   do {
-    FILE *fid;
-    char const *perFrameFileNamePrefix;
+    FILE* fid;
+    char const* perFrameFileNamePrefix;
     if (oneFilePerFrame) {
       // Create the fid for each frame
       fid = NULL;
@@ -46,8 +47,7 @@ AMRAudioFileSink *AMRAudioFileSink::createNew(UsageEnvironment &env,
     } else {
       // Normal case: create the fid once
       fid = OpenOutputFile(env, fileName);
-      if (fid == NULL)
-        break;
+      if (fid == NULL) break;
       perFrameFileNamePrefix = NULL;
     }
 
@@ -57,25 +57,25 @@ AMRAudioFileSink *AMRAudioFileSink::createNew(UsageEnvironment &env,
   return NULL;
 }
 
-Boolean AMRAudioFileSink::sourceIsCompatibleWithUs(MediaSource &source) {
+Boolean AMRAudioFileSink::sourceIsCompatibleWithUs(MediaSource& source) {
   // The input source must be a AMR Audio source:
   return source.isAMRAudioSource();
 }
 
 void AMRAudioFileSink::afterGettingFrame(unsigned frameSize,
-                                         unsigned numTruncatedBytes,
-                                         struct timeval presentationTime) {
-  AMRAudioSource *source = (AMRAudioSource *)fSource;
-  if (source == NULL)
-    return; // sanity check
+					 unsigned numTruncatedBytes,
+					 struct timeval presentationTime) {
+  AMRAudioSource* source = (AMRAudioSource*)fSource;
+  if (source == NULL) return; // sanity check
 
   if (!fHaveWrittenHeader && fPerFrameFileNameBuffer == NULL) {
     // Output the appropriate AMR header to the start of the file.
     // This header is defined in RFC 4867, section 5.
     // (However, we don't do this if we're creating one file per frame.)
     char headerBuffer[100];
-    sprintf(headerBuffer, "#!AMR%s%s\n", source->isWideband() ? "-WB" : "",
-            source->numChannels() > 1 ? "_MC1.0" : "");
+    sprintf(headerBuffer, "#!AMR%s%s\n",
+	    source->isWideband() ? "-WB" : "",
+	    source->numChannels() > 1 ? "_MC1.0" : "");
     unsigned headerLength = strlen(headerBuffer);
     if (source->numChannels() > 1) {
       // Also add a 32-bit channel description field:
@@ -85,7 +85,7 @@ void AMRAudioFileSink::afterGettingFrame(unsigned frameSize,
       headerBuffer[headerLength++] = source->numChannels();
     }
 
-    addData((unsigned char *)headerBuffer, headerLength, presentationTime);
+    addData((unsigned char*)headerBuffer, headerLength, presentationTime);
   }
   fHaveWrittenHeader = True;
 
@@ -96,7 +96,6 @@ void AMRAudioFileSink::afterGettingFrame(unsigned frameSize,
     addData(&frameHeader, 1, presentationTime);
   }
 
-  // Call the parent class to complete the normal file write with the input
-  // data:
+  // Call the parent class to complete the normal file write with the input data:
   FileSink::afterGettingFrame(frameSize, numTruncatedBytes, presentationTime);
 }

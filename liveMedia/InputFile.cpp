@@ -14,15 +14,15 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // Common routines for opening/closing named input files
 // Implementation
 
 #include "InputFile.hh"
 #include <string.h>
 
-FILE *OpenInputFile(UsageEnvironment &env, char const *fileName) {
-  FILE *fid;
+FILE* OpenInputFile(UsageEnvironment& env, char const* fileName) {
+  FILE* fid;
 
   // Check for a special case file name: "stdin"
   if (strcmp(fileName, "stdin") == 0) {
@@ -33,20 +33,19 @@ FILE *OpenInputFile(UsageEnvironment &env, char const *fileName) {
   } else {
     fid = fopen(fileName, "rb");
     if (fid == NULL) {
-      env.setResultMsg("unable to open file \"", fileName, "\"");
+      env.setResultMsg("unable to open file \"",fileName, "\"");
     }
   }
 
   return fid;
 }
 
-void CloseInputFile(FILE *fid) {
+void CloseInputFile(FILE* fid) {
   // Don't close 'stdin', in case we want to use it again later.
-  if (fid != NULL && fid != stdin)
-    fclose(fid);
+  if (fid != NULL && fid != stdin) fclose(fid);
 }
 
-u_int64_t GetFileSize(char const *fileName, FILE *fid) {
+u_int64_t GetFileSize(char const* fileName, FILE* fid) {
   u_int64_t fileSize = 0; // by default
 
   if (fid != stdin) {
@@ -54,16 +53,15 @@ u_int64_t GetFileSize(char const *fileName, FILE *fid) {
     if (fileName == NULL) {
 #endif
       if (fid != NULL && SeekFile64(fid, 0, SEEK_END) >= 0) {
-        fileSize = (u_int64_t)TellFile64(fid);
-        if (fileSize == (u_int64_t)-1)
-          fileSize = 0; // TellFile64() failed
-        SeekFile64(fid, 0, SEEK_SET);
+	fileSize = (u_int64_t)TellFile64(fid);
+	if (fileSize == (u_int64_t)-1) fileSize = 0; // TellFile64() failed
+	SeekFile64(fid, 0, SEEK_SET);
       }
 #if !defined(_WIN32_WCE)
     } else {
       struct stat sb;
       if (stat(fileName, &sb) == 0) {
-        fileSize = sb.st_size;
+	fileSize = sb.st_size;
       }
     }
 #endif
@@ -73,8 +71,7 @@ u_int64_t GetFileSize(char const *fileName, FILE *fid) {
 }
 
 int64_t SeekFile64(FILE *fid, int64_t offset, int whence) {
-  if (fid == NULL)
-    return -1;
+  if (fid == NULL) return -1;
 
   clearerr(fid);
   fflush(fid);
@@ -90,8 +87,7 @@ int64_t SeekFile64(FILE *fid, int64_t offset, int whence) {
 }
 
 int64_t TellFile64(FILE *fid) {
-  if (fid == NULL)
-    return -1;
+  if (fid == NULL) return -1;
 
   clearerr(fid);
   fflush(fid);

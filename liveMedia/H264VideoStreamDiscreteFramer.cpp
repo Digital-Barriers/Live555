@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // A simplified version of "H264VideoStreamFramer" that takes only complete,
 // discrete frames (rather than an arbitrary byte stream) as input.
 // This avoids the parsing and data copying overhead of the full
@@ -23,21 +23,23 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 #include "H264VideoStreamDiscreteFramer.hh"
 
-H264VideoStreamDiscreteFramer *H264VideoStreamDiscreteFramer ::createNew(
-    UsageEnvironment &env, FramedSource *inputSource,
-    Boolean includeStartCodeInOutput, Boolean insertAccessUnitDelimiters) {
-  return new H264VideoStreamDiscreteFramer(
-      env, inputSource, includeStartCodeInOutput, insertAccessUnitDelimiters);
+H264VideoStreamDiscreteFramer*
+H264VideoStreamDiscreteFramer
+::createNew(UsageEnvironment& env, FramedSource* inputSource,
+	    Boolean includeStartCodeInOutput, Boolean insertAccessUnitDelimiters) {
+  return new H264VideoStreamDiscreteFramer(env, inputSource,
+					   includeStartCodeInOutput, insertAccessUnitDelimiters);
 }
 
-H264VideoStreamDiscreteFramer ::H264VideoStreamDiscreteFramer(
-    UsageEnvironment &env, FramedSource *inputSource,
-    Boolean includeStartCodeInOutput, Boolean insertAccessUnitDelimiters)
-    : H264or5VideoStreamDiscreteFramer(264, env, inputSource,
-                                       includeStartCodeInOutput,
-                                       insertAccessUnitDelimiters) {}
+H264VideoStreamDiscreteFramer
+::H264VideoStreamDiscreteFramer(UsageEnvironment& env, FramedSource* inputSource,
+				Boolean includeStartCodeInOutput, Boolean insertAccessUnitDelimiters)
+  : H264or5VideoStreamDiscreteFramer(264, env, inputSource,
+				     includeStartCodeInOutput, insertAccessUnitDelimiters) {
+}
 
-H264VideoStreamDiscreteFramer::~H264VideoStreamDiscreteFramer() {}
+H264VideoStreamDiscreteFramer::~H264VideoStreamDiscreteFramer() {
+}
 
 Boolean H264VideoStreamDiscreteFramer::isH264VideoStreamFramer() const {
   return True;

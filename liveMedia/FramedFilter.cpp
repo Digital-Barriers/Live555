@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // Framed Filters
 // Implementation
 
@@ -30,28 +30,30 @@ void FramedFilter::detachInputSource() {
   }
 }
 
-FramedFilter::FramedFilter(UsageEnvironment &env, FramedSource *inputSource)
-    : FramedSource(env), fInputSource(inputSource) {}
+FramedFilter::FramedFilter(UsageEnvironment& env,
+			   FramedSource* inputSource)
+  : FramedSource(env),
+    fInputSource(inputSource) {
+}
 
-FramedFilter::~FramedFilter() { Medium::close(fInputSource); }
+FramedFilter::~FramedFilter() {
+  Medium::close(fInputSource);
+}
 
 // Default implementations of needed virtual functions.  These merely
 // call the same function in the input source - i.e., act like a 'null filter
 
-char const *FramedFilter::MIMEtype() const {
-  if (fInputSource == NULL)
-    return "";
+char const* FramedFilter::MIMEtype() const {
+  if (fInputSource == NULL) return "";
 
   return fInputSource->MIMEtype();
 }
 
 void FramedFilter::getAttributes() const {
-  if (fInputSource != NULL)
-    fInputSource->getAttributes();
+  if (fInputSource != NULL) fInputSource->getAttributes();
 }
 
 void FramedFilter::doStopGettingFrames() {
   FramedSource::doStopGettingFrames();
-  if (fInputSource != NULL)
-    fInputSource->stopGettingFrames();
+  if (fInputSource != NULL) fInputSource->stopGettingFrames();
 }

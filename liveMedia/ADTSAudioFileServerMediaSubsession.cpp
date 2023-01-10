@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
 // A 'ServerMediaSubsession' object that creates new, unicast, "RTPSink"s
 // on demand, from an AAC audio file in ADTS format
 // Implementation
@@ -23,33 +23,38 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include "ADTSAudioFileSource.hh"
 #include "MPEG4GenericRTPSink.hh"
 
-ADTSAudioFileServerMediaSubsession *
-ADTSAudioFileServerMediaSubsession::createNew(UsageEnvironment &env,
-                                              char const *fileName,
-                                              Boolean reuseFirstSource) {
-  return new ADTSAudioFileServerMediaSubsession(env, fileName,
-                                                reuseFirstSource);
+ADTSAudioFileServerMediaSubsession*
+ADTSAudioFileServerMediaSubsession::createNew(UsageEnvironment& env,
+					     char const* fileName,
+					     Boolean reuseFirstSource) {
+  return new ADTSAudioFileServerMediaSubsession(env, fileName, reuseFirstSource);
 }
 
-ADTSAudioFileServerMediaSubsession ::ADTSAudioFileServerMediaSubsession(
-    UsageEnvironment &env, char const *fileName, Boolean reuseFirstSource)
-    : FileServerMediaSubsession(env, fileName, reuseFirstSource) {}
+ADTSAudioFileServerMediaSubsession
+::ADTSAudioFileServerMediaSubsession(UsageEnvironment& env,
+				    char const* fileName, Boolean reuseFirstSource)
+  : FileServerMediaSubsession(env, fileName, reuseFirstSource) {
+}
 
-ADTSAudioFileServerMediaSubsession ::~ADTSAudioFileServerMediaSubsession() {}
+ADTSAudioFileServerMediaSubsession
+::~ADTSAudioFileServerMediaSubsession() {
+}
 
-FramedSource *ADTSAudioFileServerMediaSubsession ::createNewStreamSource(
-    unsigned /*clientSessionId*/, unsigned &estBitrate) {
+FramedSource* ADTSAudioFileServerMediaSubsession
+::createNewStreamSource(unsigned /*clientSessionId*/, unsigned& estBitrate) {
   estBitrate = 96; // kbps, estimate
 
   return ADTSAudioFileSource::createNew(envir(), fFileName);
 }
 
-RTPSink *ADTSAudioFileServerMediaSubsession ::createNewRTPSink(
-    Groupsock *rtpGroupsock, unsigned char rtpPayloadTypeIfDynamic,
-    FramedSource *inputSource) {
-  ADTSAudioFileSource *adtsSource = (ADTSAudioFileSource *)inputSource;
-  return MPEG4GenericRTPSink::createNew(
-      envir(), rtpGroupsock, rtpPayloadTypeIfDynamic,
-      adtsSource->samplingFrequency(), "audio", "AAC-hbr",
-      adtsSource->configStr(), adtsSource->numChannels());
+RTPSink* ADTSAudioFileServerMediaSubsession
+::createNewRTPSink(Groupsock* rtpGroupsock,
+		   unsigned char rtpPayloadTypeIfDynamic,
+		   FramedSource* inputSource) {
+  ADTSAudioFileSource* adtsSource = (ADTSAudioFileSource*)inputSource;
+  return MPEG4GenericRTPSink::createNew(envir(), rtpGroupsock,
+					rtpPayloadTypeIfDynamic,
+					adtsSource->samplingFrequency(),
+					"audio", "AAC-hbr", adtsSource->configStr(),
+					adtsSource->numChannels());
 }
