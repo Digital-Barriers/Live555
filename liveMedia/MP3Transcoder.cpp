@@ -20,29 +20,29 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 #include "MP3Transcoder.hh"
 
-MP3Transcoder::MP3Transcoder(UsageEnvironment& env,
-			     MP3ADUTranscoder* aduTranscoder)
-  : MP3FromADUSource(env, aduTranscoder, False) {
-}
+MP3Transcoder::MP3Transcoder(UsageEnvironment &env,
+                             MP3ADUTranscoder *aduTranscoder)
+    : MP3FromADUSource(env, aduTranscoder, False) {}
 
-MP3Transcoder::~MP3Transcoder() {
-}
+MP3Transcoder::~MP3Transcoder() {}
 
-MP3Transcoder* MP3Transcoder::createNew(UsageEnvironment& env,
-					unsigned outBitrate /* in kbps */,
-					FramedSource* inputSource) {
-  MP3Transcoder* newSource = NULL;
+MP3Transcoder *MP3Transcoder::createNew(UsageEnvironment &env,
+                                        unsigned outBitrate /* in kbps */,
+                                        FramedSource *inputSource) {
+  MP3Transcoder *newSource = NULL;
 
   do {
     // Create the intermediate filters that help implement the transcoder:
-    ADUFromMP3Source* aduFromMP3
-      = ADUFromMP3Source::createNew(env, inputSource, False);
+    ADUFromMP3Source *aduFromMP3 =
+        ADUFromMP3Source::createNew(env, inputSource, False);
     // Note: This also checks that "inputSource" is an MP3 source
-    if (aduFromMP3 == NULL) break;
+    if (aduFromMP3 == NULL)
+      break;
 
-    MP3ADUTranscoder* aduTranscoder
-      = MP3ADUTranscoder::createNew(env, outBitrate, aduFromMP3);
-    if (aduTranscoder == NULL) break;
+    MP3ADUTranscoder *aduTranscoder =
+        MP3ADUTranscoder::createNew(env, outBitrate, aduFromMP3);
+    if (aduTranscoder == NULL)
+      break;
 
     // Then create the transcoder itself:
     newSource = new MP3Transcoder(env, aduTranscoder);

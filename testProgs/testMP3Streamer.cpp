@@ -17,8 +17,8 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 // A test program that streams a MP3 file via RTP/RTCP
 // main program
 
-#include "liveMedia.hh"
 #include "GroupsockHelper.hh"
+#include "liveMedia.hh"
 
 #include "BasicUsageEnvironment.hh"
 
@@ -42,43 +42,43 @@ Boolean const isSSM = False;
 // (Note that this RTSP server works for multicast only)
 
 #ifdef IMPLEMENT_RTSP_SERVER
-RTSPServer* rtspServer;
+RTSPServer *rtspServer;
 #endif
 
-UsageEnvironment* env;
+UsageEnvironment *env;
 
 // A structure to hold the state of the current session.
 // It is used in the "afterPlaying()" function to clean up the session.
 struct sessionState_t {
-  FramedSource* source;
-  RTPSink* sink;
-  RTCPInstance* rtcpInstance;
-  Groupsock* rtpGroupsock;
-  Groupsock* rtcpGroupsock;
+  FramedSource *source;
+  RTPSink *sink;
+  RTCPInstance *rtcpInstance;
+  Groupsock *rtpGroupsock;
+  Groupsock *rtcpGroupsock;
 } sessionState;
 
-char const* inputFileName = "test.mp3";
+char const *inputFileName = "test.mp3";
 
 void play(); // forward
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // Begin by setting up our usage environment:
-  TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+  TaskScheduler *scheduler = BasicTaskScheduler::createNew();
   env = BasicUsageEnvironment::createNew(*scheduler);
 
   // Create 'groupsocks' for RTP and RTCP:
-  char const* destinationAddressStr
+  char const *destinationAddressStr
 #ifdef USE_SSM
-    = "232.255.42.42";
+      = "232.255.42.42";
 #else
-    = "239.255.42.42";
+      = "239.255.42.42";
   // Note: This is a multicast address.  If you wish to stream using
   // unicast instead, then replace this string with the unicast address
   // of the (single) destination.  (You may also need to make a similar
   // change to the receiver program.)
 #endif
   const unsigned short rtpPortNum = 6666;
-  const unsigned short rtcpPortNum = rtpPortNum+1;
+  const unsigned short rtcpPortNum = rtpPortNum + 1;
   const unsigned char ttl = 1; // low, in case routers don't admin scope
 
   struct in_addr destinationAddress;
@@ -86,10 +86,10 @@ int main(int argc, char** argv) {
   const Port rtpPort(rtpPortNum);
   const Port rtcpPort(rtcpPortNum);
 
-  sessionState.rtpGroupsock
-    = new Groupsock(*env, destinationAddress, rtpPort, ttl);
-  sessionState.rtcpGroupsock
-    = new Groupsock(*env, destinationAddress, rtcpPort, ttl);
+  sessionState.rtpGroupsock =
+      new Groupsock(*env, destinationAddress, rtpPort, ttl);
+  sessionState.rtcpGroupsock =
+      new Groupsock(*env, destinationAddress, rtcpPort, ttl);
 #ifdef USE_SSM
   sessionState.rtpGroupsock->multicastSendOnly();
   sessionState.rtcpGroupsock->multicastSendOnly();
@@ -98,25 +98,22 @@ int main(int argc, char** argv) {
   // Create a 'MP3 RTP' sink from the RTP 'groupsock':
 #ifdef STREAM_USING_ADUS
   unsigned char rtpPayloadFormat = 96; // A dynamic payload format code
-  sessionState.sink
-    = MP3ADURTPSink::createNew(*env, sessionState.rtpGroupsock,
-			       rtpPayloadFormat);
+  sessionState.sink = MP3ADURTPSink::createNew(*env, sessionState.rtpGroupsock,
+                                               rtpPayloadFormat);
 #else
-  sessionState.sink
-    = MPEG1or2AudioRTPSink::createNew(*env, sessionState.rtpGroupsock);
+  sessionState.sink =
+      MPEG1or2AudioRTPSink::createNew(*env, sessionState.rtpGroupsock);
 #endif
 
   // Create (and start) a 'RTCP instance' for this RTP sink:
   const unsigned estimatedSessionBandwidth = 160; // in kbps; for RTCP b/w share
   const unsigned maxCNAMElen = 100;
-  unsigned char CNAME[maxCNAMElen+1];
-  gethostname((char*)CNAME, maxCNAMElen);
+  unsigned char CNAME[maxCNAMElen + 1];
+  gethostname((char *)CNAME, maxCNAMElen);
   CNAME[maxCNAMElen] = '\0'; // just in case
-  sessionState.rtcpInstance
-    = RTCPInstance::createNew(*env, sessionState.rtcpGroupsock,
-			      estimatedSessionBandwidth, CNAME,
-			      sessionState.sink, NULL /* we're a server */,
-			      isSSM);
+  sessionState.rtcpInstance = RTCPInstance::createNew(
+      *env, sessionState.rtcpGroupsock, estimatedSessionBandwidth, CNAME,
+      sessionState.sink, NULL /* we're a server */, isSSM);
   // Note: This starts RTCP running automatically
 
 #ifdef IMPLEMENT_RTSP_SERVER
@@ -128,13 +125,14 @@ int main(int argc, char** argv) {
     *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
     exit(1);
   }
-  ServerMediaSession* sms
-    = ServerMediaSession::createNew(*env, "testStream", inputFileName,
-		"Session streamed by \"testMP3Streamer\"", isSSM);
-  sms->addSubsession(PassiveServerMediaSubsession::createNew(*sessionState.sink, sessionState.rtcpInstance));
+  ServerMediaSession *sms = ServerMediaSession::createNew(
+      *env, "testStream", inputFileName,
+      "Session streamed by \"testMP3Streamer\"", isSSM);
+  sms->addSubsession(PassiveServerMediaSubsession::createNew(
+      *sessionState.sink, sessionState.rtcpInstance));
   rtspServer->addServerMediaSession(sms);
 
-  char* url = rtspServer->rtspURL(sms);
+  char *url = rtspServer->rtspURL(sms);
   *env << "Play this stream using the URL \"" << url << "\"\n";
   delete[] url;
 #endif
@@ -142,24 +140,23 @@ int main(int argc, char** argv) {
   play();
 
   env->taskScheduler().doEventLoop(); // does not return
-  return 0; // only to prevent compiler warning
+  return 0;                           // only to prevent compiler warning
 }
 
-void afterPlaying(void* clientData); // forward
+void afterPlaying(void *clientData); // forward
 
 void play() {
   // Open the file as a 'MP3 file source':
   sessionState.source = MP3FileSource::createNew(*env, inputFileName);
   if (sessionState.source == NULL) {
     *env << "Unable to open file \"" << inputFileName
-	 << "\" as a MP3 file source\n";
+         << "\" as a MP3 file source\n";
     exit(1);
   }
 
 #ifdef STREAM_USING_ADUS
   // Add a filter that converts the source MP3s to ADUs:
-  sessionState.source
-    = ADUFromMP3Source::createNew(*env, sessionState.source);
+  sessionState.source = ADUFromMP3Source::createNew(*env, sessionState.source);
   if (sessionState.source == NULL) {
     *env << "Unable to create a MP3->ADU filter for the source\n";
     exit(1);
@@ -167,12 +164,12 @@ void play() {
 
 #ifdef INTERLEAVE_ADUS
   // Add another filter that interleaves the ADUs before packetizing them:
-  unsigned char interleaveCycle[] = {0,2,1,3}; // or choose your own order...
-  unsigned const interleaveCycleSize
-    = (sizeof interleaveCycle)/(sizeof (unsigned char));
+  unsigned char interleaveCycle[] = {0, 2, 1, 3}; // or choose your own order...
+  unsigned const interleaveCycleSize =
+      (sizeof interleaveCycle) / (sizeof(unsigned char));
   Interleaving interleaving(interleaveCycleSize, interleaveCycle);
-  sessionState.source
-    = MP3ADUinterleaver::createNew(*env, interleaving, sessionState.source);
+  sessionState.source =
+      MP3ADUinterleaver::createNew(*env, interleaving, sessionState.source);
   if (sessionState.source == NULL) {
     *env << "Unable to create an ADU interleaving filter for the source\n";
     exit(1);
@@ -185,8 +182,7 @@ void play() {
   sessionState.sink->startPlaying(*sessionState.source, afterPlaying, NULL);
 }
 
-
-void afterPlaying(void* /*clientData*/) {
+void afterPlaying(void * /*clientData*/) {
   *env << "...done streaming\n";
 
   sessionState.sink->stopPlaying();

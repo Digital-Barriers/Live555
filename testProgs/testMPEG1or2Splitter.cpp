@@ -18,39 +18,39 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 // video and audio output files.
 // main program
 
-#include "liveMedia.hh"
 #include "BasicUsageEnvironment.hh"
+#include "liveMedia.hh"
 #include <stdlib.h>
 
-char const* inputFileName = "in.mpg";
-char const* outputFileName_video = "out_video.mpg";
-char const* outputFileName_audio = "out_audio.mpg";
+char const *inputFileName = "in.mpg";
+char const *outputFileName_video = "out_video.mpg";
+char const *outputFileName_audio = "out_audio.mpg";
 
-void afterPlaying(void* clientData); // forward
+void afterPlaying(void *clientData); // forward
 
 // A structure to hold the state of the current session.
 // It is used in the "afterPlaying()" function to clean up the session.
 struct sessionState_t {
-  MPEG1or2Demux* baseDemultiplexor;
-  MediaSource* videoSource;
-  MediaSource* audioSource;
-  FileSink* videoSink;
-  FileSink* audioSink;
+  MPEG1or2Demux *baseDemultiplexor;
+  MediaSource *videoSource;
+  MediaSource *audioSource;
+  FileSink *videoSink;
+  FileSink *audioSink;
 } sessionState;
 
-UsageEnvironment* env;
+UsageEnvironment *env;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // Begin by setting up our usage environment:
-  TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+  TaskScheduler *scheduler = BasicTaskScheduler::createNew();
   env = BasicUsageEnvironment::createNew(*scheduler);
 
   // Open the input file as a 'byte-stream file source':
-  ByteStreamFileSource* inputSource
-    = ByteStreamFileSource::createNew(*env, inputFileName);
+  ByteStreamFileSource *inputSource =
+      ByteStreamFileSource::createNew(*env, inputFileName);
   if (inputSource == NULL) {
     *env << "Unable to open file \"" << inputFileName
-	 << "\" as a byte-stream file source\n";
+         << "\" as a byte-stream file source\n";
     exit(1);
   }
 
@@ -67,18 +67,18 @@ int main(int argc, char** argv) {
 
   // Finally, start playing each sink.
   *env << "Beginning to read...\n";
-  sessionState.videoSink->startPlaying(*sessionState.videoSource,
-				       afterPlaying, sessionState.videoSink);
-  sessionState.audioSink->startPlaying(*sessionState.audioSource,
-				       afterPlaying, sessionState.audioSink);
+  sessionState.videoSink->startPlaying(*sessionState.videoSource, afterPlaying,
+                                       sessionState.videoSink);
+  sessionState.audioSink->startPlaying(*sessionState.audioSource, afterPlaying,
+                                       sessionState.audioSink);
 
   env->taskScheduler().doEventLoop(); // does not return
 
   return 0; // only to prevent compiler warning
 }
 
-void afterPlaying(void* clientData) {
-  Medium* finishedSink = (Medium*)clientData;
+void afterPlaying(void *clientData) {
+  Medium *finishedSink = (Medium *)clientData;
 
   if (finishedSink == sessionState.videoSink) {
     *env << "No more video\n";

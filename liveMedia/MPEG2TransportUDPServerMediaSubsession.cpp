@@ -21,55 +21,61 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 #include "MPEG2TransportUDPServerMediaSubsession.hh"
 #include "BasicUDPSource.hh"
-#include "SimpleRTPSource.hh"
+#include "GroupsockHelper.hh"
 #include "MPEG2TransportStreamFramer.hh"
 #include "SimpleRTPSink.hh"
-#include "GroupsockHelper.hh"
+#include "SimpleRTPSource.hh"
 
-
-MPEG2TransportUDPServerMediaSubsession*
-MPEG2TransportUDPServerMediaSubsession::createNew(UsageEnvironment& env,
-						  char const* inputAddressStr, Port const& inputPort, Boolean inputStreamIsRawUDP) {
-  return new MPEG2TransportUDPServerMediaSubsession(env, inputAddressStr, inputPort, inputStreamIsRawUDP);
+MPEG2TransportUDPServerMediaSubsession *
+MPEG2TransportUDPServerMediaSubsession::createNew(UsageEnvironment &env,
+                                                  char const *inputAddressStr,
+                                                  Port const &inputPort,
+                                                  Boolean inputStreamIsRawUDP) {
+  return new MPEG2TransportUDPServerMediaSubsession(
+      env, inputAddressStr, inputPort, inputStreamIsRawUDP);
 }
 
-MPEG2TransportUDPServerMediaSubsession
-::MPEG2TransportUDPServerMediaSubsession(UsageEnvironment& env,
-                                         char const* inputAddressStr, Port const& inputPort, Boolean inputStreamIsRawUDP)
-  : OnDemandServerMediaSubsession(env, True/*reuseFirstSource*/),
-    fInputPort(inputPort), fInputGroupsock(NULL), fInputStreamIsRawUDP(inputStreamIsRawUDP) {
+MPEG2TransportUDPServerMediaSubsession ::MPEG2TransportUDPServerMediaSubsession(
+    UsageEnvironment &env, char const *inputAddressStr, Port const &inputPort,
+    Boolean inputStreamIsRawUDP)
+    : OnDemandServerMediaSubsession(env, True /*reuseFirstSource*/),
+      fInputPort(inputPort), fInputGroupsock(NULL),
+      fInputStreamIsRawUDP(inputStreamIsRawUDP) {
   fInputAddressStr = strDup(inputAddressStr);
 }
 
 MPEG2TransportUDPServerMediaSubsession::
-~MPEG2TransportUDPServerMediaSubsession() {
+    ~MPEG2TransportUDPServerMediaSubsession() {
   delete fInputGroupsock;
-  delete[] (char*)fInputAddressStr;
+  delete[](char *) fInputAddressStr;
 }
 
-FramedSource* MPEG2TransportUDPServerMediaSubsession
-::createNewStreamSource(unsigned/* clientSessionId*/, unsigned& estBitrate) {
+FramedSource *MPEG2TransportUDPServerMediaSubsession ::createNewStreamSource(
+    unsigned /* clientSessionId*/, unsigned &estBitrate) {
   estBitrate = 5000; // kbps, estimate
 
   if (fInputGroupsock == NULL) {
     // Create a 'groupsock' object for receiving the input stream:
     struct in_addr inputAddress;
-    inputAddress.s_addr = fInputAddressStr == NULL ? 0 : our_inet_addr(fInputAddressStr);
+    inputAddress.s_addr =
+        fInputAddressStr == NULL ? 0 : our_inet_addr(fInputAddressStr);
     fInputGroupsock = new Groupsock(envir(), inputAddress, fInputPort, 255);
   }
 
-  FramedSource* transportStreamSource;
+  FramedSource *transportStreamSource;
   if (fInputStreamIsRawUDP) {
     transportStreamSource = BasicUDPSource::createNew(envir(), fInputGroupsock);
   } else {
-    transportStreamSource = SimpleRTPSource::createNew(envir(), fInputGroupsock, 33, 90000, "video/MP2T", 0, False /*no 'M' bit*/);
+    transportStreamSource =
+        SimpleRTPSource::createNew(envir(), fInputGroupsock, 33, 90000,
+                                   "video/MP2T", 0, False /*no 'M' bit*/);
   }
   return MPEG2TransportStreamFramer::createNew(envir(), transportStreamSource);
 }
 
-RTPSink* MPEG2TransportUDPServerMediaSubsession
-::createNewRTPSink(Groupsock* rtpGroupsock, unsigned char /*rtpPayloadTypeIfDynamic*/, FramedSource* /*inputSource*/) {
-  return SimpleRTPSink::createNew(envir(), rtpGroupsock,
-				  33, 90000, "video", "MP2T",
-				  1, True, False /*no 'M' bit*/);
+RTPSink *MPEG2TransportUDPServerMediaSubsession ::createNewRTPSink(
+    Groupsock *rtpGroupsock, unsigned char /*rtpPayloadTypeIfDynamic*/,
+    FramedSource * /*inputSource*/) {
+  return SimpleRTPSink::createNew(envir(), rtpGroupsock, 33, 90000, "video",
+                                  "MP2T", 1, True, False /*no 'M' bit*/);
 }

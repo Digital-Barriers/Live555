@@ -17,22 +17,21 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 // A program that receives and prints SDP/SAP announcements
 // (on the default SDP/SAP directory: 224.2.127.254/9875)
 
+#include "BasicUsageEnvironment.hh"
 #include "Groupsock.hh"
 #include "GroupsockHelper.hh"
-#include "BasicUsageEnvironment.hh"
 #include <stdio.h>
 
 static unsigned const maxPacketSize = 65536;
-static unsigned char packet[maxPacketSize+1];
+static unsigned char packet[maxPacketSize + 1];
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // Begin by setting up our usage environment:
-  TaskScheduler* scheduler = BasicTaskScheduler::createNew();
-  UsageEnvironment* env = BasicUsageEnvironment::createNew(*scheduler);
-
+  TaskScheduler *scheduler = BasicTaskScheduler::createNew();
+  UsageEnvironment *env = BasicUsageEnvironment::createNew(*scheduler);
 
   // Create a 'groupsock' for the input multicast group,port:
-  char const* sessionAddressStr = "224.2.127.254";
+  char const *sessionAddressStr = "224.2.127.254";
   struct in_addr sessionAddress;
   sessionAddress.s_addr = our_inet_addr(sessionAddressStr);
 
@@ -47,13 +46,15 @@ int main(int argc, char** argv) {
   // event handler like we do in most of the other test programs.)
   unsigned packetSize;
   struct sockaddr_in fromAddress;
-  while (inputGroupsock.handleRead(packet, maxPacketSize,
-				   packetSize, fromAddress)) {
-    printf("\n[packet from %s (%d bytes)]\n", AddressString(fromAddress).val(), packetSize);
+  while (inputGroupsock.handleRead(packet, maxPacketSize, packetSize,
+                                   fromAddress)) {
+    printf("\n[packet from %s (%d bytes)]\n", AddressString(fromAddress).val(),
+           packetSize);
 
     // Ignore the first 8 bytes (SAP header).
     if (packetSize < 8) {
-      *env << "Ignoring short packet from " << AddressString(fromAddress).val() << "%s!\n";
+      *env << "Ignoring short packet from " << AddressString(fromAddress).val()
+           << "%s!\n";
       continue;
     }
 
@@ -61,12 +62,13 @@ int main(int argc, char** argv) {
     // or all other nonprintable characters to blank, except new line
     unsigned idx = 8;
     while (idx < packetSize) {
-      if (packet[idx] < 0x20 && packet[idx] != '\n') packet[idx] = 0x20;
+      if (packet[idx] < 0x20 && packet[idx] != '\n')
+        packet[idx] = 0x20;
       idx++;
     }
 
     packet[packetSize] = '\0'; // just in case
-    printf("%s", (char*)(packet+8));
+    printf("%s", (char *)(packet + 8));
   }
 
   return 0; // only to prevent compiler warning

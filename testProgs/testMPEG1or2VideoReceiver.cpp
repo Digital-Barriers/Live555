@@ -18,29 +18,29 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 // and outputs the resulting MPEG file stream to 'stdout'
 // main program
 
-#include "liveMedia.hh"
 #include "GroupsockHelper.hh"
+#include "liveMedia.hh"
 
 #include "BasicUsageEnvironment.hh"
 
 // To receive a "source-specific multicast" (SSM) stream, uncomment this:
 //#define USE_SSM 1
 
-void afterPlaying(void* clientData); // forward
+void afterPlaying(void *clientData); // forward
 
 // A structure to hold the state of the current session.
 // It is used in the "afterPlaying()" function to clean up the session.
 struct sessionState_t {
-  RTPSource* source;
-  MediaSink* sink;
-  RTCPInstance* rtcpInstance;
+  RTPSource *source;
+  MediaSink *sink;
+  RTCPInstance *rtcpInstance;
 } sessionState;
 
-UsageEnvironment* env;
+UsageEnvironment *env;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // Begin by setting up our usage environment:
-  TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+  TaskScheduler *scheduler = BasicTaskScheduler::createNew();
   env = BasicUsageEnvironment::createNew(*scheduler);
 
   // Create the data sink for 'stdout':
@@ -49,16 +49,16 @@ int main(int argc, char** argv) {
   // A real file name could have been used instead.
 
   // Create 'groupsocks' for RTP and RTCP:
-  char const* sessionAddressStr
+  char const *sessionAddressStr
 #ifdef USE_SSM
-    = "232.255.42.42";
+      = "232.255.42.42";
 #else
-    = "239.255.42.42";
+      = "239.255.42.42";
   // Note: If the session is unicast rather than multicast,
   // then replace this string with "0.0.0.0"
 #endif
   const unsigned short rtpPortNum = 8888;
-  const unsigned short rtcpPortNum = rtpPortNum+1;
+  const unsigned short rtcpPortNum = rtpPortNum + 1;
 #ifndef USE_SSM
   const unsigned char ttl = 1; // low, in case routers don't admin scope
 #endif
@@ -69,15 +69,15 @@ int main(int argc, char** argv) {
   const Port rtcpPort(rtcpPortNum);
 
 #ifdef USE_SSM
-  char* sourceAddressStr = "aaa.bbb.ccc.ddd";
-                           // replace this with the real source address
+  char *sourceAddressStr = "aaa.bbb.ccc.ddd";
+  // replace this with the real source address
   struct in_addr sourceFilterAddress;
   sourceFilterAddress.s_addr = our_inet_addr(sourceAddressStr);
 
   Groupsock rtpGroupsock(*env, sessionAddress, sourceFilterAddress, rtpPort);
   Groupsock rtcpGroupsock(*env, sessionAddress, sourceFilterAddress, rtcpPort);
-  rtcpGroupsock.changeDestinationParameters(sourceFilterAddress,0,~0);
-      // our RTCP "RR"s are sent back using unicast
+  rtcpGroupsock.changeDestinationParameters(sourceFilterAddress, 0, ~0);
+  // our RTCP "RR"s are sent back using unicast
 #else
   Groupsock rtpGroupsock(*env, sessionAddress, rtpPort, ttl);
   Groupsock rtcpGroupsock(*env, sessionAddress, rtcpPort, ttl);
@@ -87,15 +87,15 @@ int main(int argc, char** argv) {
   sessionState.source = MPEG1or2VideoRTPSource::createNew(*env, &rtpGroupsock);
 
   // Create (and start) a 'RTCP instance' for the RTP source:
-  const unsigned estimatedSessionBandwidth = 4500; // in kbps; for RTCP b/w share
+  const unsigned estimatedSessionBandwidth =
+      4500; // in kbps; for RTCP b/w share
   const unsigned maxCNAMElen = 100;
-  unsigned char CNAME[maxCNAMElen+1];
-  gethostname((char*)CNAME, maxCNAMElen);
+  unsigned char CNAME[maxCNAMElen + 1];
+  gethostname((char *)CNAME, maxCNAMElen);
   CNAME[maxCNAMElen] = '\0'; // just in case
-  sessionState.rtcpInstance
-    = RTCPInstance::createNew(*env, &rtcpGroupsock,
-			      estimatedSessionBandwidth, CNAME,
-			      NULL /* we're a client */, sessionState.source);
+  sessionState.rtcpInstance = RTCPInstance::createNew(
+      *env, &rtcpGroupsock, estimatedSessionBandwidth, CNAME,
+      NULL /* we're a client */, sessionState.source);
   // Note: This starts RTCP running automatically
 
   // Finally, start receiving the multicast stream:
@@ -107,8 +107,7 @@ int main(int argc, char** argv) {
   return 0; // only to prevent compiler warning
 }
 
-
-void afterPlaying(void* /*clientData*/) {
+void afterPlaying(void * /*clientData*/) {
   *env << "...done receiving\n";
 
   // End by closing the media:

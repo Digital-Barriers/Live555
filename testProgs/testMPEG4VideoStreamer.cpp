@@ -18,20 +18,20 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 // and streams it using RTP
 // main program
 
-#include "liveMedia.hh"
 #include "BasicUsageEnvironment.hh"
 #include "GroupsockHelper.hh"
+#include "liveMedia.hh"
 
-UsageEnvironment* env;
-char const* inputFileName = "test.m4e";
-MPEG4VideoStreamFramer* videoSource;
-RTPSink* videoSink;
+UsageEnvironment *env;
+char const *inputFileName = "test.m4e";
+MPEG4VideoStreamFramer *videoSource;
+RTPSink *videoSink;
 
 void play(); // forward
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // Begin by setting up our usage environment:
-  TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+  TaskScheduler *scheduler = BasicTaskScheduler::createNew();
   env = BasicUsageEnvironment::createNew(*scheduler);
 
   // Create 'groupsocks' for RTP and RTCP:
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
   // test program - not this test program - as a model.
 
   const unsigned short rtpPortNum = 18888;
-  const unsigned short rtcpPortNum = rtpPortNum+1;
+  const unsigned short rtcpPortNum = rtpPortNum + 1;
   const unsigned char ttl = 255;
 
   const Port rtpPort(rtpPortNum);
@@ -59,29 +59,26 @@ int main(int argc, char** argv) {
   // Create (and start) a 'RTCP instance' for this RTP sink:
   const unsigned estimatedSessionBandwidth = 500; // in kbps; for RTCP b/w share
   const unsigned maxCNAMElen = 100;
-  unsigned char CNAME[maxCNAMElen+1];
-  gethostname((char*)CNAME, maxCNAMElen);
+  unsigned char CNAME[maxCNAMElen + 1];
+  gethostname((char *)CNAME, maxCNAMElen);
   CNAME[maxCNAMElen] = '\0'; // just in case
-  RTCPInstance* rtcp
-  = RTCPInstance::createNew(*env, &rtcpGroupsock,
-			    estimatedSessionBandwidth, CNAME,
-			    videoSink, NULL /* we're a server */,
-			    True /* we're a SSM source */);
+  RTCPInstance *rtcp = RTCPInstance::createNew(
+      *env, &rtcpGroupsock, estimatedSessionBandwidth, CNAME, videoSink,
+      NULL /* we're a server */, True /* we're a SSM source */);
   // Note: This starts RTCP running automatically
 
-  RTSPServer* rtspServer = RTSPServer::createNew(*env, 8554);
+  RTSPServer *rtspServer = RTSPServer::createNew(*env, 8554);
   if (rtspServer == NULL) {
     *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
     exit(1);
   }
-  ServerMediaSession* sms
-    = ServerMediaSession::createNew(*env, "testStream", inputFileName,
-		   "Session streamed by \"testMPEG4VideoStreamer\"",
-					   True /*SSM*/);
+  ServerMediaSession *sms = ServerMediaSession::createNew(
+      *env, "testStream", inputFileName,
+      "Session streamed by \"testMPEG4VideoStreamer\"", True /*SSM*/);
   sms->addSubsession(PassiveServerMediaSubsession::createNew(*videoSink, rtcp));
   rtspServer->addServerMediaSession(sms);
 
-  char* url = rtspServer->rtspURL(sms);
+  char *url = rtspServer->rtspURL(sms);
   *env << "Play this stream using the URL \"" << url << "\"\n";
   delete[] url;
 
@@ -94,7 +91,7 @@ int main(int argc, char** argv) {
   return 0; // only to prevent compiler warning
 }
 
-void afterPlaying(void* /*clientData*/) {
+void afterPlaying(void * /*clientData*/) {
   *env << "...done reading from file\n";
 
   videoSink->stopPlaying();
@@ -107,15 +104,15 @@ void afterPlaying(void* /*clientData*/) {
 
 void play() {
   // Open the input file as a 'byte-stream file source':
-  ByteStreamFileSource* fileSource
-    = ByteStreamFileSource::createNew(*env, inputFileName);
+  ByteStreamFileSource *fileSource =
+      ByteStreamFileSource::createNew(*env, inputFileName);
   if (fileSource == NULL) {
     *env << "Unable to open file \"" << inputFileName
-	 << "\" as a byte-stream file source\n";
+         << "\" as a byte-stream file source\n";
     exit(1);
   }
 
-  FramedSource* videoES = fileSource;
+  FramedSource *videoES = fileSource;
 
   // Create a framer for the Video Elementary Stream:
   videoSource = MPEG4VideoStreamFramer::createNew(*env, videoES);

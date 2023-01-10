@@ -20,13 +20,13 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 // Transport Stream file.
 // main program
 
-#include <liveMedia.hh>
 #include <BasicUsageEnvironment.hh>
+#include <liveMedia.hh>
 
-void afterPlaying(void* clientData); // forward
+void afterPlaying(void *clientData); // forward
 
-UsageEnvironment* env;
-char const* programName;
+UsageEnvironment *env;
+char const *programName;
 
 void usage() {
   *env << "usage: " << programName << " <transport-stream-file-name>\n";
@@ -34,42 +34,45 @@ void usage() {
   exit(1);
 }
 
-int main(int argc, char const** argv) {
+int main(int argc, char const **argv) {
   // Begin by setting up our usage environment:
-  TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+  TaskScheduler *scheduler = BasicTaskScheduler::createNew();
   env = BasicUsageEnvironment::createNew(*scheduler);
 
   // Parse the command line:
   programName = argv[0];
-  if (argc != 2) usage();
+  if (argc != 2)
+    usage();
 
-  char const* inputFileName = argv[1];
+  char const *inputFileName = argv[1];
   // Check whether the input file name ends with ".ts":
   int len = strlen(inputFileName);
-  if (len < 4 || strcmp(&inputFileName[len-3], ".ts") != 0) {
+  if (len < 4 || strcmp(&inputFileName[len - 3], ".ts") != 0) {
     *env << "ERROR: input file name \"" << inputFileName
-	 << "\" does not end with \".ts\"\n";
+         << "\" does not end with \".ts\"\n";
     usage();
   }
 
   // Open the input file (as a 'byte stream file source'):
-  FramedSource* input
-    = ByteStreamFileSource::createNew(*env, inputFileName, TRANSPORT_PACKET_SIZE);
+  FramedSource *input = ByteStreamFileSource::createNew(*env, inputFileName,
+                                                        TRANSPORT_PACKET_SIZE);
   if (input == NULL) {
-    *env << "Failed to open input file \"" << inputFileName << "\" (does it exist?)\n";
+    *env << "Failed to open input file \"" << inputFileName
+         << "\" (does it exist?)\n";
     exit(1);
   }
 
   // Create a filter that indexes the input Transport Stream data:
-  FramedSource* indexer
-    = MPEG2IFrameIndexFromTransportStream::createNew(*env, input);
+  FramedSource *indexer =
+      MPEG2IFrameIndexFromTransportStream::createNew(*env, input);
 
-  // The output file name is the same as the input file name, except with suffix ".tsx":
-  char* outputFileName = new char[len+2]; // allow for trailing x\0
+  // The output file name is the same as the input file name, except with suffix
+  // ".tsx":
+  char *outputFileName = new char[len + 2]; // allow for trailing x\0
   sprintf(outputFileName, "%sx", inputFileName);
 
   // Open the output file (for writing), as a 'file sink':
-  MediaSink* output = FileSink::createNew(*env, outputFileName);
+  MediaSink *output = FileSink::createNew(*env, outputFileName);
   if (output == NULL) {
     *env << "Failed to open output file \"" << outputFileName << "\"\n";
     exit(1);
@@ -84,7 +87,7 @@ int main(int argc, char const** argv) {
   return 0; // only to prevent compiler warning
 }
 
-void afterPlaying(void* /*clientData*/) {
+void afterPlaying(void * /*clientData*/) {
   *env << "...done\n";
   exit(0);
 }

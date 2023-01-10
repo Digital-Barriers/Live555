@@ -29,34 +29,27 @@ Boolean UsageEnvironment::reclaim() {
   return False;
 }
 
-UsageEnvironment::UsageEnvironment(TaskScheduler& scheduler)
-  : liveMediaPriv(NULL), groupsockPriv(NULL), fScheduler(scheduler) {
-}
+UsageEnvironment::UsageEnvironment(TaskScheduler &scheduler)
+    : liveMediaPriv(NULL), groupsockPriv(NULL), fScheduler(scheduler) {}
 
-UsageEnvironment::~UsageEnvironment() {
-}
+UsageEnvironment::~UsageEnvironment() {}
 
-// By default, we handle 'should not occur'-type library errors by calling abort().  Subclasses can redefine this, if desired.
-// (If your runtime library doesn't define the "abort()" function, then define your own (e.g., that does nothing).)
-void UsageEnvironment::internalError() {
-  abort();
-}
+// By default, we handle 'should not occur'-type library errors by calling
+// abort().  Subclasses can redefine this, if desired. (If your runtime library
+// doesn't define the "abort()" function, then define your own (e.g., that does
+// nothing).)
+void UsageEnvironment::internalError() { abort(); }
 
+TaskScheduler::TaskScheduler() {}
 
-TaskScheduler::TaskScheduler() {
-}
+TaskScheduler::~TaskScheduler() {}
 
-TaskScheduler::~TaskScheduler() {
-}
-
-void TaskScheduler::rescheduleDelayedTask(TaskToken& task,
-					  int64_t microseconds, TaskFunc* proc,
-					  void* clientData) {
+void TaskScheduler::rescheduleDelayedTask(TaskToken &task, int64_t microseconds,
+                                          TaskFunc *proc, void *clientData) {
   unscheduleDelayedTask(task);
   task = scheduleDelayedTask(microseconds, proc, clientData);
 }
 
-// By default, we handle 'should not occur'-type library errors by calling abort().  Subclasses can redefine this, if desired.
-void TaskScheduler::internalError() {
-  abort();
-}
+// By default, we handle 'should not occur'-type library errors by calling
+// abort().  Subclasses can redefine this, if desired.
+void TaskScheduler::internalError() { abort(); }

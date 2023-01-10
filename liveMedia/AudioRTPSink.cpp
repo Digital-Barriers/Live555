@@ -20,18 +20,14 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 #include "AudioRTPSink.hh"
 
-AudioRTPSink::AudioRTPSink(UsageEnvironment& env,
-			   Groupsock* rtpgs, unsigned char rtpPayloadType,
-			   unsigned rtpTimestampFrequency,
-			   char const* rtpPayloadFormatName,
-			   unsigned numChannels)
-  : MultiFramedRTPSink(env, rtpgs, rtpPayloadType, rtpTimestampFrequency,
-		       rtpPayloadFormatName, numChannels) {
-}
+AudioRTPSink::AudioRTPSink(UsageEnvironment &env, Groupsock *rtpgs,
+                           unsigned char rtpPayloadType,
+                           unsigned rtpTimestampFrequency,
+                           char const *rtpPayloadFormatName,
+                           unsigned numChannels)
+    : MultiFramedRTPSink(env, rtpgs, rtpPayloadType, rtpTimestampFrequency,
+                         rtpPayloadFormatName, numChannels) {}
 
-AudioRTPSink::~AudioRTPSink() {
-}
+AudioRTPSink::~AudioRTPSink() {}
 
-char const* AudioRTPSink::sdpMediaType() const {
-  return "audio";
-}
+char const *AudioRTPSink::sdpMediaType() const { return "audio"; }

@@ -15,54 +15,60 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 **********/
 // "liveMedia"
 // Copyright (c) 1996-2020 Live Networks, Inc.  All rights reserved.
-// A class for streaming data from a (static) memory buffer, as if it were a file.
-// Implementation
+// A class for streaming data from a (static) memory buffer, as if it were a
+// file. Implementation
 
 #include "ByteStreamMemoryBufferSource.hh"
 #include "GroupsockHelper.hh"
 
 ////////// ByteStreamMemoryBufferSource //////////
 
-ByteStreamMemoryBufferSource*
-ByteStreamMemoryBufferSource::createNew(UsageEnvironment& env,
-					u_int8_t* buffer, u_int64_t bufferSize,
-					Boolean deleteBufferOnClose,
-					unsigned preferredFrameSize,
-					unsigned playTimePerFrame) {
-  if (buffer == NULL) return NULL;
+ByteStreamMemoryBufferSource *ByteStreamMemoryBufferSource::createNew(
+    UsageEnvironment &env, u_int8_t *buffer, u_int64_t bufferSize,
+    Boolean deleteBufferOnClose, unsigned preferredFrameSize,
+    unsigned playTimePerFrame) {
+  if (buffer == NULL)
+    return NULL;
 
-  return new ByteStreamMemoryBufferSource(env, buffer, bufferSize, deleteBufferOnClose, preferredFrameSize, playTimePerFrame);
+  return new ByteStreamMemoryBufferSource(env, buffer, bufferSize,
+                                          deleteBufferOnClose,
+                                          preferredFrameSize, playTimePerFrame);
 }
 
-ByteStreamMemoryBufferSource::ByteStreamMemoryBufferSource(UsageEnvironment& env,
-							   u_int8_t* buffer, u_int64_t bufferSize,
-							   Boolean deleteBufferOnClose,
-							   unsigned preferredFrameSize,
-							   unsigned playTimePerFrame)
-  : FramedSource(env), fBuffer(buffer), fBufferSize(bufferSize), fCurIndex(0), fDeleteBufferOnClose(deleteBufferOnClose),
-    fPreferredFrameSize(preferredFrameSize), fPlayTimePerFrame(playTimePerFrame), fLastPlayTime(0),
-    fLimitNumBytesToStream(False), fNumBytesToStream(0) {
-}
+ByteStreamMemoryBufferSource::ByteStreamMemoryBufferSource(
+    UsageEnvironment &env, u_int8_t *buffer, u_int64_t bufferSize,
+    Boolean deleteBufferOnClose, unsigned preferredFrameSize,
+    unsigned playTimePerFrame)
+    : FramedSource(env), fBuffer(buffer), fBufferSize(bufferSize), fCurIndex(0),
+      fDeleteBufferOnClose(deleteBufferOnClose),
+      fPreferredFrameSize(preferredFrameSize),
+      fPlayTimePerFrame(playTimePerFrame), fLastPlayTime(0),
+      fLimitNumBytesToStream(False), fNumBytesToStream(0) {}
 
 ByteStreamMemoryBufferSource::~ByteStreamMemoryBufferSource() {
-  if (fDeleteBufferOnClose) delete[] fBuffer;
+  if (fDeleteBufferOnClose)
+    delete[] fBuffer;
 }
 
-void ByteStreamMemoryBufferSource::seekToByteAbsolute(u_int64_t byteNumber, u_int64_t numBytesToStream) {
+void ByteStreamMemoryBufferSource::seekToByteAbsolute(
+    u_int64_t byteNumber, u_int64_t numBytesToStream) {
   fCurIndex = byteNumber;
-  if (fCurIndex > fBufferSize) fCurIndex = fBufferSize;
+  if (fCurIndex > fBufferSize)
+    fCurIndex = fBufferSize;
 
   fNumBytesToStream = numBytesToStream;
   fLimitNumBytesToStream = fNumBytesToStream > 0;
 }
 
-void ByteStreamMemoryBufferSource::seekToByteRelative(int64_t offset, u_int64_t numBytesToStream) {
+void ByteStreamMemoryBufferSource::seekToByteRelative(
+    int64_t offset, u_int64_t numBytesToStream) {
   int64_t newIndex = fCurIndex + offset;
   if (newIndex < 0) {
     fCurIndex = 0;
   } else {
     fCurIndex = (u_int64_t)offset;
-    if (fCurIndex > fBufferSize) fCurIndex = fBufferSize;
+    if (fCurIndex > fBufferSize)
+      fCurIndex = fBufferSize;
   }
 
   fNumBytesToStream = numBytesToStream;
@@ -70,12 +76,14 @@ void ByteStreamMemoryBufferSource::seekToByteRelative(int64_t offset, u_int64_t 
 }
 
 void ByteStreamMemoryBufferSource::doGetNextFrame() {
-  if (fCurIndex >= fBufferSize || (fLimitNumBytesToStream && fNumBytesToStream == 0)) {
+  if (fCurIndex >= fBufferSize ||
+      (fLimitNumBytesToStream && fNumBytesToStream == 0)) {
     handleClosure();
     return;
   }
 
-  // Try to read as many bytes as will fit in the buffer provided (or "fPreferredFrameSize" if less)
+  // Try to read as many bytes as will fit in the buffer provided (or
+  // "fPreferredFrameSize" if less)
   fFrameSize = fMaxSize;
   if (fLimitNumBytesToStream && fNumBytesToStream < (u_int64_t)fFrameSize) {
     fFrameSize = (unsigned)fNumBytesToStream;
@@ -99,13 +107,13 @@ void ByteStreamMemoryBufferSource::doGetNextFrame() {
       gettimeofday(&fPresentationTime, NULL);
     } else {
       // Increment by the play time of the previous data:
-      unsigned uSeconds	= fPresentationTime.tv_usec + fLastPlayTime;
-      fPresentationTime.tv_sec += uSeconds/1000000;
-      fPresentationTime.tv_usec = uSeconds%1000000;
+      unsigned uSeconds = fPresentationTime.tv_usec + fLastPlayTime;
+      fPresentationTime.tv_sec += uSeconds / 1000000;
+      fPresentationTime.tv_usec = uSeconds % 1000000;
     }
 
     // Remember the play time of this data:
-    fLastPlayTime = (fPlayTimePerFrame*fFrameSize)/fPreferredFrameSize;
+    fLastPlayTime = (fPlayTimePerFrame * fFrameSize) / fPreferredFrameSize;
     fDurationInMicroseconds = fLastPlayTime;
   } else {
     // We don't know a specific play time duration for this data,

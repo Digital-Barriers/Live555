@@ -20,16 +20,13 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 #include "MPEGVideoStreamParser.hh"
 
-MPEGVideoStreamParser
-::MPEGVideoStreamParser(MPEGVideoStreamFramer* usingSource,
-			FramedSource* inputSource)
-  : StreamParser(inputSource, FramedSource::handleClosure, usingSource,
-		 &MPEGVideoStreamFramer::continueReadProcessing, usingSource),
-  fUsingSource(usingSource) {
-}
+MPEGVideoStreamParser ::MPEGVideoStreamParser(
+    MPEGVideoStreamFramer *usingSource, FramedSource *inputSource)
+    : StreamParser(inputSource, FramedSource::handleClosure, usingSource,
+                   &MPEGVideoStreamFramer::continueReadProcessing, usingSource),
+      fUsingSource(usingSource) {}
 
-MPEGVideoStreamParser::~MPEGVideoStreamParser() {
-}
+MPEGVideoStreamParser::~MPEGVideoStreamParser() {}
 
 void MPEGVideoStreamParser::restoreSavedParserState() {
   StreamParser::restoreSavedParserState();
@@ -37,8 +34,8 @@ void MPEGVideoStreamParser::restoreSavedParserState() {
   fNumTruncatedBytes = fSavedNumTruncatedBytes;
 }
 
-void MPEGVideoStreamParser::registerReadInterest(unsigned char* to,
-						 unsigned maxSize) {
+void MPEGVideoStreamParser::registerReadInterest(unsigned char *to,
+                                                 unsigned maxSize) {
   fStartOfFrame = fTo = fSavedTo = to;
   fLimit = to + maxSize;
   fNumTruncatedBytes = fSavedNumTruncatedBytes = 0;

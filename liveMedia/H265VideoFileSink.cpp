@@ -23,28 +23,25 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 ////////// H265VideoFileSink //////////
 
-H265VideoFileSink
-::H265VideoFileSink(UsageEnvironment& env, FILE* fid,
-		    char const* sPropVPSStr,
-                    char const* sPropSPSStr,
-                    char const* sPropPPSStr,
-		    unsigned bufferSize, char const* perFrameFileNamePrefix)
-  : H264or5VideoFileSink(env, fid, bufferSize, perFrameFileNamePrefix,
-			 sPropVPSStr, sPropSPSStr, sPropPPSStr) {
-}
+H265VideoFileSink ::H265VideoFileSink(UsageEnvironment &env, FILE *fid,
+                                      char const *sPropVPSStr,
+                                      char const *sPropSPSStr,
+                                      char const *sPropPPSStr,
+                                      unsigned bufferSize,
+                                      char const *perFrameFileNamePrefix)
+    : H264or5VideoFileSink(env, fid, bufferSize, perFrameFileNamePrefix,
+                           sPropVPSStr, sPropSPSStr, sPropPPSStr) {}
 
-H265VideoFileSink::~H265VideoFileSink() {
-}
+H265VideoFileSink::~H265VideoFileSink() {}
 
-H265VideoFileSink*
-H265VideoFileSink::createNew(UsageEnvironment& env, char const* fileName,
-			     char const* sPropVPSStr,
-			     char const* sPropSPSStr,
-			     char const* sPropPPSStr,
-			     unsigned bufferSize, Boolean oneFilePerFrame) {
+H265VideoFileSink *
+H265VideoFileSink::createNew(UsageEnvironment &env, char const *fileName,
+                             char const *sPropVPSStr, char const *sPropSPSStr,
+                             char const *sPropPPSStr, unsigned bufferSize,
+                             Boolean oneFilePerFrame) {
   do {
-    FILE* fid;
-    char const* perFrameFileNamePrefix;
+    FILE *fid;
+    char const *perFrameFileNamePrefix;
     if (oneFilePerFrame) {
       // Create the fid for each frame
       fid = NULL;
@@ -52,11 +49,14 @@ H265VideoFileSink::createNew(UsageEnvironment& env, char const* fileName,
     } else {
       // Normal case: create the fid once
       fid = OpenOutputFile(env, fileName);
-      if (fid == NULL) break;
+      if (fid == NULL)
+        break;
       perFrameFileNamePrefix = NULL;
     }
 
-    return new H265VideoFileSink(env, fid, sPropVPSStr, sPropSPSStr, sPropPPSStr, bufferSize, perFrameFileNamePrefix);
+    return new H265VideoFileSink(env, fid, sPropVPSStr, sPropSPSStr,
+                                 sPropPPSStr, bufferSize,
+                                 perFrameFileNamePrefix);
   } while (0);
 
   return NULL;

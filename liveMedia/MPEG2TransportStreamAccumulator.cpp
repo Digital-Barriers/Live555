@@ -21,9 +21,8 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 #include "MPEG2TransportStreamAccumulator.hh"
 
-MPEG2TransportStreamAccumulator*
-MPEG2TransportStreamAccumulator::createNew(UsageEnvironment& env,
-					   FramedSource* inputSource, unsigned maxPacketSize) {
+MPEG2TransportStreamAccumulator *MPEG2TransportStreamAccumulator::createNew(
+    UsageEnvironment &env, FramedSource *inputSource, unsigned maxPacketSize) {
   return new MPEG2TransportStreamAccumulator(env, inputSource, maxPacketSize);
 }
 
@@ -31,16 +30,15 @@ MPEG2TransportStreamAccumulator::createNew(UsageEnvironment& env,
 #define TRANSPORT_PACKET_SIZE 188
 #endif
 
-MPEG2TransportStreamAccumulator
-::MPEG2TransportStreamAccumulator(UsageEnvironment& env,
-				  FramedSource* inputSource, unsigned maxPacketSize)
-  : FramedFilter(env, inputSource),
-    fDesiredPacketSize(maxPacketSize < TRANSPORT_PACKET_SIZE ? TRANSPORT_PACKET_SIZE : (maxPacketSize/TRANSPORT_PACKET_SIZE)),
-    fNumBytesGathered(0) {
-}
+MPEG2TransportStreamAccumulator ::MPEG2TransportStreamAccumulator(
+    UsageEnvironment &env, FramedSource *inputSource, unsigned maxPacketSize)
+    : FramedFilter(env, inputSource),
+      fDesiredPacketSize(maxPacketSize < TRANSPORT_PACKET_SIZE
+                             ? TRANSPORT_PACKET_SIZE
+                             : (maxPacketSize / TRANSPORT_PACKET_SIZE)),
+      fNumBytesGathered(0) {}
 
-MPEG2TransportStreamAccumulator::~MPEG2TransportStreamAccumulator() {
-}
+MPEG2TransportStreamAccumulator::~MPEG2TransportStreamAccumulator() {}
 
 void MPEG2TransportStreamAccumulator::doGetNextFrame() {
   if (fNumBytesGathered >= fDesiredPacketSize) {
@@ -51,26 +49,22 @@ void MPEG2TransportStreamAccumulator::doGetNextFrame() {
   } else {
     // Ask for more data (delivered directly to the client's buffer);
     fInputSource->getNextFrame(fTo, fMaxSize, afterGettingFrame, this,
-			       FramedSource::handleClosure, this);
+                               FramedSource::handleClosure, this);
   }
 }
 
-void MPEG2TransportStreamAccumulator
-::afterGettingFrame(void* clientData, unsigned frameSize,
-		    unsigned numTruncatedBytes,
-		    struct timeval presentationTime,
-		    unsigned durationInMicroseconds) {
-  MPEG2TransportStreamAccumulator* accumulator
-    = (MPEG2TransportStreamAccumulator*)clientData;
+void MPEG2TransportStreamAccumulator ::afterGettingFrame(
+    void *clientData, unsigned frameSize, unsigned numTruncatedBytes,
+    struct timeval presentationTime, unsigned durationInMicroseconds) {
+  MPEG2TransportStreamAccumulator *accumulator =
+      (MPEG2TransportStreamAccumulator *)clientData;
   accumulator->afterGettingFrame1(frameSize, numTruncatedBytes,
-				  presentationTime, durationInMicroseconds);
+                                  presentationTime, durationInMicroseconds);
 }
 
-void MPEG2TransportStreamAccumulator
-::afterGettingFrame1(unsigned frameSize,
-		     unsigned numTruncatedBytes,
-		     struct timeval presentationTime,
-		     unsigned durationInMicroseconds) {
+void MPEG2TransportStreamAccumulator ::afterGettingFrame1(
+    unsigned frameSize, unsigned numTruncatedBytes,
+    struct timeval presentationTime, unsigned durationInMicroseconds) {
   if (fNumBytesGathered == 0) { // this is the first frame of the new chunk
     fPresentationTime = presentationTime;
     fDurationInMicroseconds = 0;

@@ -20,42 +20,38 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 // Implementation
 
 #include "AC3AudioFileServerMediaSubsession.hh"
-#include "ByteStreamFileSource.hh"
-#include "AC3AudioStreamFramer.hh"
 #include "AC3AudioRTPSink.hh"
+#include "AC3AudioStreamFramer.hh"
+#include "ByteStreamFileSource.hh"
 
-AC3AudioFileServerMediaSubsession*
-AC3AudioFileServerMediaSubsession::createNew(UsageEnvironment& env,
-					     char const* fileName,
-					     Boolean reuseFirstSource) {
+AC3AudioFileServerMediaSubsession *AC3AudioFileServerMediaSubsession::createNew(
+    UsageEnvironment &env, char const *fileName, Boolean reuseFirstSource) {
   return new AC3AudioFileServerMediaSubsession(env, fileName, reuseFirstSource);
 }
 
-AC3AudioFileServerMediaSubsession
-::AC3AudioFileServerMediaSubsession(UsageEnvironment& env,
-				    char const* fileName, Boolean reuseFirstSource)
-  : FileServerMediaSubsession(env, fileName, reuseFirstSource) {
-}
+AC3AudioFileServerMediaSubsession ::AC3AudioFileServerMediaSubsession(
+    UsageEnvironment &env, char const *fileName, Boolean reuseFirstSource)
+    : FileServerMediaSubsession(env, fileName, reuseFirstSource) {}
 
-AC3AudioFileServerMediaSubsession::~AC3AudioFileServerMediaSubsession() {
-}
+AC3AudioFileServerMediaSubsession::~AC3AudioFileServerMediaSubsession() {}
 
-FramedSource* AC3AudioFileServerMediaSubsession
-::createNewStreamSource(unsigned /*clientSessionId*/, unsigned& estBitrate) {
+FramedSource *AC3AudioFileServerMediaSubsession ::createNewStreamSource(
+    unsigned /*clientSessionId*/, unsigned &estBitrate) {
   estBitrate = 48; // kbps, estimate
 
-  ByteStreamFileSource* fileSource = ByteStreamFileSource::createNew(envir(), fFileName);
-  if (fileSource == NULL) return NULL;
+  ByteStreamFileSource *fileSource =
+      ByteStreamFileSource::createNew(envir(), fFileName);
+  if (fileSource == NULL)
+    return NULL;
 
   return AC3AudioStreamFramer::createNew(envir(), fileSource);
 }
 
-RTPSink* AC3AudioFileServerMediaSubsession
-::createNewRTPSink(Groupsock* rtpGroupsock,
-		   unsigned char rtpPayloadTypeIfDynamic,
-		   FramedSource* inputSource) {
-  AC3AudioStreamFramer* audioSource = (AC3AudioStreamFramer*)inputSource;
+RTPSink *AC3AudioFileServerMediaSubsession ::createNewRTPSink(
+    Groupsock *rtpGroupsock, unsigned char rtpPayloadTypeIfDynamic,
+    FramedSource *inputSource) {
+  AC3AudioStreamFramer *audioSource = (AC3AudioStreamFramer *)inputSource;
   return AC3AudioRTPSink::createNew(envir(), rtpGroupsock,
-				    rtpPayloadTypeIfDynamic,
-				    audioSource->samplingRate());
+                                    rtpPayloadTypeIfDynamic,
+                                    audioSource->samplingRate());
 }

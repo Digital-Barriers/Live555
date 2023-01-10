@@ -19,55 +19,52 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 // Implementation
 
 #include "MPEG1or2AudioStreamFramer.hh"
-#include "StreamParser.hh"
 #include "MP3Internals.hh"
+#include "StreamParser.hh"
 #include <GroupsockHelper.hh>
 
 ////////// MPEG1or2AudioStreamParser definition //////////
 
-class MPEG1or2AudioStreamParser: public StreamParser {
+class MPEG1or2AudioStreamParser : public StreamParser {
 public:
-  MPEG1or2AudioStreamParser(MPEG1or2AudioStreamFramer* usingSource,
-			FramedSource* inputSource);
+  MPEG1or2AudioStreamParser(MPEG1or2AudioStreamFramer *usingSource,
+                            FramedSource *inputSource);
   virtual ~MPEG1or2AudioStreamParser();
 
 public:
-  unsigned parse(unsigned& numTruncatedBytes);
-      // returns the size of the frame that was acquired, or 0 if none was
+  unsigned parse(unsigned &numTruncatedBytes);
+  // returns the size of the frame that was acquired, or 0 if none was
 
-  void registerReadInterest(unsigned char* to, unsigned maxSize);
+  void registerReadInterest(unsigned char *to, unsigned maxSize);
 
-  MP3FrameParams const& currentFrame() const { return fCurrentFrame; }
+  MP3FrameParams const &currentFrame() const { return fCurrentFrame; }
 
 private:
-  unsigned char* fTo;
+  unsigned char *fTo;
   unsigned fMaxSize;
 
   // Parameters of the most recently read frame:
   MP3FrameParams fCurrentFrame; // also works for layer I or II
 };
 
-
 ////////// MPEG1or2AudioStreamFramer implementation //////////
 
-MPEG1or2AudioStreamFramer
-::MPEG1or2AudioStreamFramer(UsageEnvironment& env, FramedSource* inputSource,
-			    Boolean syncWithInputSource)
-  : FramedFilter(env, inputSource),
-    fSyncWithInputSource(syncWithInputSource) {
+MPEG1or2AudioStreamFramer ::MPEG1or2AudioStreamFramer(
+    UsageEnvironment &env, FramedSource *inputSource,
+    Boolean syncWithInputSource)
+    : FramedFilter(env, inputSource),
+      fSyncWithInputSource(syncWithInputSource) {
   reset();
 
   fParser = new MPEG1or2AudioStreamParser(this, inputSource);
 }
 
-MPEG1or2AudioStreamFramer::~MPEG1or2AudioStreamFramer() {
-  delete fParser;
-}
+MPEG1or2AudioStreamFramer::~MPEG1or2AudioStreamFramer() { delete fParser; }
 
-MPEG1or2AudioStreamFramer*
-MPEG1or2AudioStreamFramer::createNew(UsageEnvironment& env,
-				     FramedSource* inputSource,
-				     Boolean syncWithInputSource) {
+MPEG1or2AudioStreamFramer *
+MPEG1or2AudioStreamFramer::createNew(UsageEnvironment &env,
+                                     FramedSource *inputSource,
+                                     Boolean syncWithInputSource) {
   // Need to add source type checking here???  #####
   return new MPEG1or2AudioStreamFramer(env, inputSource, syncWithInputSource);
 }
@@ -84,8 +81,8 @@ void MPEG1or2AudioStreamFramer::reset() {
   resetPresentationTime(timeNow);
 }
 
-void MPEG1or2AudioStreamFramer
-::resetPresentationTime(struct timeval newPresentationTime) {
+void MPEG1or2AudioStreamFramer ::resetPresentationTime(
+    struct timeval newPresentationTime) {
   fNextFramePresentationTime = newPresentationTime;
 }
 
@@ -99,11 +96,11 @@ void MPEG1or2AudioStreamFramer::doGetNextFrame() {
 static unsigned const numSamplesByLayer[4] = {0, 384, 1152, 1152};
 
 struct timeval MPEG1or2AudioStreamFramer::currentFramePlayTime() const {
-  MP3FrameParams const& fr = fParser->currentFrame();
+  MP3FrameParams const &fr = fParser->currentFrame();
   unsigned const numSamples = numSamplesByLayer[fr.layer];
 
   struct timeval result;
-  unsigned const freq = fr.samplingFreq*(1 + fr.isMPEG2);
+  unsigned const freq = fr.samplingFreq * (1 + fr.isMPEG2);
   if (freq == 0) {
     result.tv_sec = 0;
     result.tv_usec = 0;
@@ -111,19 +108,18 @@ struct timeval MPEG1or2AudioStreamFramer::currentFramePlayTime() const {
   }
 
   // result is numSamples/freq
-  unsigned const uSeconds
-    = ((numSamples*2*MILLION)/freq + 1)/2; // rounds to nearest integer
+  unsigned const uSeconds =
+      ((numSamples * 2 * MILLION) / freq + 1) / 2; // rounds to nearest integer
 
-  result.tv_sec = uSeconds/MILLION;
-  result.tv_usec = uSeconds%MILLION;
+  result.tv_sec = uSeconds / MILLION;
+  result.tv_usec = uSeconds % MILLION;
   return result;
 }
 
-void MPEG1or2AudioStreamFramer
-::continueReadProcessing(void* clientData,
-			 unsigned char* /*ptr*/, unsigned /*size*/,
-			 struct timeval presentationTime) {
-  MPEG1or2AudioStreamFramer* framer = (MPEG1or2AudioStreamFramer*)clientData;
+void MPEG1or2AudioStreamFramer ::continueReadProcessing(
+    void *clientData, unsigned char * /*ptr*/, unsigned /*size*/,
+    struct timeval presentationTime) {
+  MPEG1or2AudioStreamFramer *framer = (MPEG1or2AudioStreamFramer *)clientData;
   if (framer->fSyncWithInputSource) {
     framer->resetPresentationTime(presentationTime);
   }
@@ -141,10 +137,11 @@ void MPEG1or2AudioStreamFramer::continueReadProcessing() {
     // based on the length of this frame:
     fPresentationTime = fNextFramePresentationTime;
     struct timeval framePlayTime = currentFramePlayTime();
-    fDurationInMicroseconds = framePlayTime.tv_sec*MILLION + framePlayTime.tv_usec;
+    fDurationInMicroseconds =
+        framePlayTime.tv_sec * MILLION + framePlayTime.tv_usec;
     fNextFramePresentationTime.tv_usec += framePlayTime.tv_usec;
-    fNextFramePresentationTime.tv_sec
-      += framePlayTime.tv_sec + fNextFramePresentationTime.tv_usec/MILLION;
+    fNextFramePresentationTime.tv_sec +=
+        framePlayTime.tv_sec + fNextFramePresentationTime.tv_usec / MILLION;
     fNextFramePresentationTime.tv_usec %= MILLION;
 
     // Call our own 'after getting' function.  Because we're not a 'leaf'
@@ -157,31 +154,28 @@ void MPEG1or2AudioStreamFramer::continueReadProcessing() {
   }
 }
 
-
 ////////// MPEG1or2AudioStreamParser implementation //////////
 
-MPEG1or2AudioStreamParser
-::MPEG1or2AudioStreamParser(MPEG1or2AudioStreamFramer* usingSource,
-			FramedSource* inputSource)
-  : StreamParser(inputSource, FramedSource::handleClosure, usingSource,
-		 &MPEG1or2AudioStreamFramer::continueReadProcessing, usingSource) {
-}
+MPEG1or2AudioStreamParser ::MPEG1or2AudioStreamParser(
+    MPEG1or2AudioStreamFramer *usingSource, FramedSource *inputSource)
+    : StreamParser(inputSource, FramedSource::handleClosure, usingSource,
+                   &MPEG1or2AudioStreamFramer::continueReadProcessing,
+                   usingSource) {}
 
-MPEG1or2AudioStreamParser::~MPEG1or2AudioStreamParser() {
-}
+MPEG1or2AudioStreamParser::~MPEG1or2AudioStreamParser() {}
 
-void MPEG1or2AudioStreamParser::registerReadInterest(unsigned char* to,
-						 unsigned maxSize) {
+void MPEG1or2AudioStreamParser::registerReadInterest(unsigned char *to,
+                                                     unsigned maxSize) {
   fTo = to;
   fMaxSize = maxSize;
 }
 
-unsigned MPEG1or2AudioStreamParser::parse(unsigned& numTruncatedBytes) {
+unsigned MPEG1or2AudioStreamParser::parse(unsigned &numTruncatedBytes) {
   try {
     saveParserState();
 
     // We expect a MPEG audio header (first 11 bits set to 1) at the start:
-    while (((fCurrentFrame.hdr = test4Bytes())&0xFFE00000) != 0xFFE00000) {
+    while (((fCurrentFrame.hdr = test4Bytes()) & 0xFFE00000) != 0xFFE00000) {
       skipBytes(1);
       saveParserState();
     }
@@ -203,8 +197,9 @@ unsigned MPEG1or2AudioStreamParser::parse(unsigned& numTruncatedBytes) {
     return frameSize;
   } catch (int /*e*/) {
 #ifdef DEBUG
-    fprintf(stderr, "MPEG1or2AudioStreamParser::parse() EXCEPTION (This is normal behavior - *not* an error)\n");
+    fprintf(stderr, "MPEG1or2AudioStreamParser::parse() EXCEPTION (This is "
+                    "normal behavior - *not* an error)\n");
 #endif
-    return 0;  // the parsing got interrupted
+    return 0; // the parsing got interrupted
   }
 }

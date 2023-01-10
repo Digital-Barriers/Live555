@@ -12,19 +12,20 @@
    C or C++ code:
  */
 #undef _ANSI_ARGS_
-#if ((defined(__STDC__) || defined(SABER)) && !defined(NO_PROTOTYPE)) || defined(__cplusplus) || defined(USE_PROTOTYPE)
-#   define _ANSI_ARGS_(x)	x
+#if ((defined(__STDC__) || defined(SABER)) && !defined(NO_PROTOTYPE)) ||       \
+    defined(__cplusplus) || defined(USE_PROTOTYPE)
+#define _ANSI_ARGS_(x) x
 #else
-#   define _ANSI_ARGS_(x)	()
+#define _ANSI_ARGS_(x) ()
 #endif
 #ifdef __cplusplus
-#   define EXTERN extern "C"
+#define EXTERN extern "C"
 #else
-#   define EXTERN extern
+#define EXTERN extern
 #endif
 
 /* The code from the spec assumes a type "event"; make this a void*: */
-typedef void* event;
+typedef void *event;
 
 #define EVENT_UNKNOWN 0
 #define EVENT_REPORT 1
@@ -34,7 +35,7 @@ typedef void* event;
 typedef double time_tp;
 
 /* The code from the spec assumes a type "packet"; make this a void*: */
-typedef void* packet;
+typedef void *packet;
 
 #define PACKET_UNKNOWN_TYPE 0
 #define PACKET_RTP 1
@@ -46,7 +47,9 @@ typedef void* packet;
 #define drand48 drand30
 
 /* The code calls "exit()", but we don't want to exit, so make it a noop: */
-#define exit(n) do {} while (0)
+#define exit(n)                                                                \
+  do {                                                                         \
+  } while (0)
 
 #ifndef FALSE
 #define FALSE 0
@@ -57,14 +60,16 @@ typedef void* packet;
 
 /* EXPORTS: */
 
-EXTERN void OnExpire _ANSI_ARGS_((event, int, int, double, int, double*, int*, time_tp, time_tp*, int*));
+EXTERN void OnExpire _ANSI_ARGS_((event, int, int, double, int, double *, int *,
+                                  time_tp, time_tp *, int *));
 
-EXTERN void OnReceive _ANSI_ARGS_((packet, event, int*, int*, int*, double*, double*, double, double));
+EXTERN void OnReceive _ANSI_ARGS_((packet, event, int *, int *, int *, double *,
+                                   double *, double, double));
 
 /* IMPORTS: */
 
-EXTERN void Schedule _ANSI_ARGS_((double,event));
-EXTERN void Reschedule _ANSI_ARGS_((double,event));
+EXTERN void Schedule _ANSI_ARGS_((double, event));
+EXTERN void Reschedule _ANSI_ARGS_((double, event));
 EXTERN void SendRTCPReport _ANSI_ARGS_((event));
 EXTERN void SendBYEPacket _ANSI_ARGS_((event));
 EXTERN int TypeOfEvent _ANSI_ARGS_((event));

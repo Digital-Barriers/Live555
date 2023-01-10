@@ -26,8 +26,8 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 extern "C" int initializeWinsockIfNecessary();
 #endif
 
-BasicUsageEnvironment::BasicUsageEnvironment(TaskScheduler& taskScheduler)
-: BasicUsageEnvironment0(taskScheduler) {
+BasicUsageEnvironment::BasicUsageEnvironment(TaskScheduler &taskScheduler)
+    : BasicUsageEnvironment0(taskScheduler) {
 #if defined(__WIN32__) || defined(_WIN32)
   if (!initializeWinsockIfNecessary()) {
     setResultErrMsg("Failed to initialize 'winsock': ");
@@ -37,11 +37,10 @@ BasicUsageEnvironment::BasicUsageEnvironment(TaskScheduler& taskScheduler)
 #endif
 }
 
-BasicUsageEnvironment::~BasicUsageEnvironment() {
-}
+BasicUsageEnvironment::~BasicUsageEnvironment() {}
 
-BasicUsageEnvironment*
-BasicUsageEnvironment::createNew(TaskScheduler& taskScheduler) {
+BasicUsageEnvironment *
+BasicUsageEnvironment::createNew(TaskScheduler &taskScheduler) {
   return new BasicUsageEnvironment(taskScheduler);
 }
 
@@ -53,28 +52,29 @@ int BasicUsageEnvironment::getErrno() const {
 #endif
 }
 
-UsageEnvironment& BasicUsageEnvironment::operator<<(char const* str) {
-  if (str == NULL) str = "(NULL)"; // sanity check
+UsageEnvironment &BasicUsageEnvironment::operator<<(char const *str) {
+  if (str == NULL)
+    str = "(NULL)"; // sanity check
   fprintf(stderr, "%s", str);
   return *this;
 }
 
-UsageEnvironment& BasicUsageEnvironment::operator<<(int i) {
+UsageEnvironment &BasicUsageEnvironment::operator<<(int i) {
   fprintf(stderr, "%d", i);
   return *this;
 }
 
-UsageEnvironment& BasicUsageEnvironment::operator<<(unsigned u) {
+UsageEnvironment &BasicUsageEnvironment::operator<<(unsigned u) {
   fprintf(stderr, "%u", u);
   return *this;
 }
 
-UsageEnvironment& BasicUsageEnvironment::operator<<(double d) {
+UsageEnvironment &BasicUsageEnvironment::operator<<(double d) {
   fprintf(stderr, "%f", d);
   return *this;
 }
 
-UsageEnvironment& BasicUsageEnvironment::operator<<(void* p) {
+UsageEnvironment &BasicUsageEnvironment::operator<<(void *p) {
   fprintf(stderr, "%p", p);
   return *this;
 }

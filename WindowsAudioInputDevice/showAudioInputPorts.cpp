@@ -19,17 +19,17 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include "AudioInputDevice.hh"
 #include <stdio.h>
 
-int main(int argc, char** argv) {
-	AudioPortNames* portNames = AudioInputDevice::getPortNames();
-	if (portNames == NULL) {
-		fprintf(stderr, "AudioInputDevice::getPortNames() failed!\n");
-		exit(1);
-	}
+int main(int argc, char **argv) {
+  AudioPortNames *portNames = AudioInputDevice::getPortNames();
+  if (portNames == NULL) {
+    fprintf(stderr, "AudioInputDevice::getPortNames() failed!\n");
+    exit(1);
+  }
 
-	printf("%d available audio input ports:\n", portNames->numPorts);
-	for (unsigned i = 0; i < portNames->numPorts; ++i) {
-		printf("%d\t%s\n", i, portNames->portName[i]);
-	}
+  printf("%d available audio input ports:\n", portNames->numPorts);
+  for (unsigned i = 0; i < portNames->numPorts; ++i) {
+    printf("%d\t%s\n", i, portNames->portName[i]);
+  }
 
   return 0;
 }

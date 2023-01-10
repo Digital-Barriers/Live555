@@ -1,5 +1,6 @@
 // Copyright (c) 1996-2020, Live Networks, Inc.  All rights reserved
-// This code may not be copied or used in any form without permission from Live Networks, Inc.
+// This code may not be copied or used in any form without permission from Live
+// Networks, Inc.
 //
 // A function for computing the HMAC_SHA1 digest
 // Implementation
@@ -15,10 +16,11 @@
 
 ////////// HMAC_SHA1 implementation //////////
 
-static void sha1(u_int8_t* resultDigest/*must be SHA1_DIGEST_LEN bytes in size*/,
-		 u_int8_t const* data1, unsigned data1Length,
-		 u_int8_t const* data2 = NULL, unsigned data2Length = 0) {
-  EVP_MD_CTX* ctx = EVP_MD_CTX_create();
+static void
+sha1(u_int8_t *resultDigest /*must be SHA1_DIGEST_LEN bytes in size*/,
+     u_int8_t const *data1, unsigned data1Length, u_int8_t const *data2 = NULL,
+     unsigned data2Length = 0) {
+  EVP_MD_CTX *ctx = EVP_MD_CTX_create();
   EVP_DigestInit(ctx, EVP_sha1());
   EVP_DigestUpdate(ctx, data1, data1Length);
   if (data2 != NULL) {
@@ -27,9 +29,12 @@ static void sha1(u_int8_t* resultDigest/*must be SHA1_DIGEST_LEN bytes in size*/
   EVP_DigestFinal(ctx, resultDigest, NULL);
 }
 
-void HMAC_SHA1(u_int8_t const* key, unsigned keyLength, u_int8_t const* text, unsigned textLength,
-	       u_int8_t* resultDigest/*must be SHA1_DIGEST_LEN bytes in size*/) {
-  if (key == NULL || keyLength == 0 || text == NULL || textLength == 0 || resultDigest == NULL) {
+void HMAC_SHA1(
+    u_int8_t const *key, unsigned keyLength, u_int8_t const *text,
+    unsigned textLength,
+    u_int8_t *resultDigest /*must be SHA1_DIGEST_LEN bytes in size*/) {
+  if (key == NULL || keyLength == 0 || text == NULL || textLength == 0 ||
+      resultDigest == NULL) {
     return; // sanity check
   }
 
@@ -47,14 +52,14 @@ void HMAC_SHA1(u_int8_t const* key, unsigned keyLength, u_int8_t const* text, un
   u_int8_t opad[HMAC_BLOCK_SIZE];
   unsigned i;
   for (i = 0; i < keyLength; ++i) {
-    ipad[i] = key[i]^0x36;
-    opad[i] = key[i]^0x5c;
+    ipad[i] = key[i] ^ 0x36;
+    opad[i] = key[i] ^ 0x5c;
   }
   for (; i < HMAC_BLOCK_SIZE; ++i) {
     ipad[i] = 0x36;
     opad[i] = 0x5c;
   }
-  
+
   // Perform the inner hash:
   sha1(tmpDigest, ipad, HMAC_BLOCK_SIZE, text, textLength);
 

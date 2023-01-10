@@ -18,27 +18,28 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 // and streams it using RTP
 // main program
 //
-// NOTE: For this application to work, the H.265 Elementary Stream video file *must* contain
-// VPS, SPS and PPS NAL units, ideally at or near the start of the file.
-// These VPS, SPS and PPS NAL units are used to specify 'configuration' information that is set in
-// the output stream's SDP description (by the RTSP server that is built in to this application).
-// Note also that - unlike some other "*Streamer" demo applications - the resulting stream can be
-// received only using a RTSP client (such as "openRTSP")
+// NOTE: For this application to work, the H.265 Elementary Stream video file
+// *must* contain VPS, SPS and PPS NAL units, ideally at or near the start of
+// the file. These VPS, SPS and PPS NAL units are used to specify
+// 'configuration' information that is set in the output stream's SDP
+// description (by the RTSP server that is built in to this application). Note
+// also that - unlike some other "*Streamer" demo applications - the resulting
+// stream can be received only using a RTSP client (such as "openRTSP")
 
-#include <liveMedia.hh>
 #include <BasicUsageEnvironment.hh>
 #include <GroupsockHelper.hh>
+#include <liveMedia.hh>
 
-UsageEnvironment* env;
-char const* inputFileName = "test.265";
-H265VideoStreamFramer* videoSource;
-RTPSink* videoSink;
+UsageEnvironment *env;
+char const *inputFileName = "test.265";
+H265VideoStreamFramer *videoSource;
+RTPSink *videoSink;
 
 void play(); // forward
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // Begin by setting up our usage environment:
-  TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+  TaskScheduler *scheduler = BasicTaskScheduler::createNew();
   env = BasicUsageEnvironment::createNew(*scheduler);
 
   // Create 'groupsocks' for RTP and RTCP:
@@ -49,7 +50,7 @@ int main(int argc, char** argv) {
   // test program - not this test program - as a model.
 
   const unsigned short rtpPortNum = 18888;
-  const unsigned short rtcpPortNum = rtpPortNum+1;
+  const unsigned short rtcpPortNum = rtpPortNum + 1;
   const unsigned char ttl = 255;
 
   const Port rtpPort(rtpPortNum);
@@ -67,29 +68,26 @@ int main(int argc, char** argv) {
   // Create (and start) a 'RTCP instance' for this RTP sink:
   const unsigned estimatedSessionBandwidth = 500; // in kbps; for RTCP b/w share
   const unsigned maxCNAMElen = 100;
-  unsigned char CNAME[maxCNAMElen+1];
-  gethostname((char*)CNAME, maxCNAMElen);
+  unsigned char CNAME[maxCNAMElen + 1];
+  gethostname((char *)CNAME, maxCNAMElen);
   CNAME[maxCNAMElen] = '\0'; // just in case
-  RTCPInstance* rtcp
-  = RTCPInstance::createNew(*env, &rtcpGroupsock,
-			    estimatedSessionBandwidth, CNAME,
-			    videoSink, NULL /* we're a server */,
-			    True /* we're a SSM source */);
+  RTCPInstance *rtcp = RTCPInstance::createNew(
+      *env, &rtcpGroupsock, estimatedSessionBandwidth, CNAME, videoSink,
+      NULL /* we're a server */, True /* we're a SSM source */);
   // Note: This starts RTCP running automatically
 
-  RTSPServer* rtspServer = RTSPServer::createNew(*env, 8554);
+  RTSPServer *rtspServer = RTSPServer::createNew(*env, 8554);
   if (rtspServer == NULL) {
     *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
     exit(1);
   }
-  ServerMediaSession* sms
-    = ServerMediaSession::createNew(*env, "testStream", inputFileName,
-		   "Session streamed by \"testH265VideoStreamer\"",
-					   True /*SSM*/);
+  ServerMediaSession *sms = ServerMediaSession::createNew(
+      *env, "testStream", inputFileName,
+      "Session streamed by \"testH265VideoStreamer\"", True /*SSM*/);
   sms->addSubsession(PassiveServerMediaSubsession::createNew(*videoSink, rtcp));
   rtspServer->addServerMediaSession(sms);
 
-  char* url = rtspServer->rtspURL(sms);
+  char *url = rtspServer->rtspURL(sms);
   *env << "Play this stream using the URL \"" << url << "\"\n";
   delete[] url;
 
@@ -102,7 +100,7 @@ int main(int argc, char** argv) {
   return 0; // only to prevent compiler warning
 }
 
-void afterPlaying(void* /*clientData*/) {
+void afterPlaying(void * /*clientData*/) {
   *env << "...done reading from file\n";
   videoSink->stopPlaying();
   Medium::close(videoSource);
@@ -114,15 +112,15 @@ void afterPlaying(void* /*clientData*/) {
 
 void play() {
   // Open the input file as a 'byte-stream file source':
-  ByteStreamFileSource* fileSource
-    = ByteStreamFileSource::createNew(*env, inputFileName);
+  ByteStreamFileSource *fileSource =
+      ByteStreamFileSource::createNew(*env, inputFileName);
   if (fileSource == NULL) {
     *env << "Unable to open file \"" << inputFileName
          << "\" as a byte-stream file source\n";
     exit(1);
   }
 
-  FramedSource* videoES = fileSource;
+  FramedSource *videoES = fileSource;
 
   // Create a framer for the Video Elementary Stream:
   videoSource = H265VideoStreamFramer::createNew(*env, videoES);

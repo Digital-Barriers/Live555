@@ -22,18 +22,13 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 ////////// MediaSource //////////
 
-MediaSource::MediaSource(UsageEnvironment& env)
-	: Medium(env) {
-}
+MediaSource::MediaSource(UsageEnvironment &env) : Medium(env) {}
 
-MediaSource::~MediaSource() {
-}
+MediaSource::~MediaSource() {}
 
-Boolean MediaSource::isSource() const {
-  return True;
-}
+Boolean MediaSource::isSource() const { return True; }
 
-char const* MediaSource::MIMEtype() const {
+char const *MediaSource::MIMEtype() const {
   return "application/OCTET-STREAM"; // default type
 }
 
@@ -68,20 +63,20 @@ Boolean MediaSource::isMPEG2TransportStreamMultiplexor() const {
   return False; // default implementation
 }
 
-Boolean MediaSource::lookupByName(UsageEnvironment& env,
-				  char const* sourceName,
-				  MediaSource*& resultSource) {
+Boolean MediaSource::lookupByName(UsageEnvironment &env, char const *sourceName,
+                                  MediaSource *&resultSource) {
   resultSource = NULL; // unless we succeed
 
-  Medium* medium;
-  if (!Medium::lookupByName(env, sourceName, medium)) return False;
+  Medium *medium;
+  if (!Medium::lookupByName(env, sourceName, medium))
+    return False;
 
   if (!medium->isSource()) {
     env.setResultMsg(sourceName, " is not a media source");
     return False;
   }
 
-  resultSource = (MediaSource*)medium;
+  resultSource = (MediaSource *)medium;
   return True;
 }
 

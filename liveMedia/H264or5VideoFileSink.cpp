@@ -23,35 +23,41 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 ////////// H264or5VideoFileSink //////////
 
-H264or5VideoFileSink
-::H264or5VideoFileSink(UsageEnvironment& env, FILE* fid,
-		       unsigned bufferSize, char const* perFrameFileNamePrefix,
-		       char const* sPropParameterSetsStr1,
-                       char const* sPropParameterSetsStr2,
-                       char const* sPropParameterSetsStr3)
-  : FileSink(env, fid, bufferSize, perFrameFileNamePrefix),
-    fHaveWrittenFirstFrame(False) {
+H264or5VideoFileSink ::H264or5VideoFileSink(UsageEnvironment &env, FILE *fid,
+                                            unsigned bufferSize,
+                                            char const *perFrameFileNamePrefix,
+                                            char const *sPropParameterSetsStr1,
+                                            char const *sPropParameterSetsStr2,
+                                            char const *sPropParameterSetsStr3)
+    : FileSink(env, fid, bufferSize, perFrameFileNamePrefix),
+      fHaveWrittenFirstFrame(False) {
   fSPropParameterSetsStr[0] = strDup(sPropParameterSetsStr1);
   fSPropParameterSetsStr[1] = strDup(sPropParameterSetsStr2);
   fSPropParameterSetsStr[2] = strDup(sPropParameterSetsStr3);
 }
 
 H264or5VideoFileSink::~H264or5VideoFileSink() {
-  for (unsigned j = 0; j < 3; ++j) delete[] (char*)fSPropParameterSetsStr[j];
+  for (unsigned j = 0; j < 3; ++j)
+    delete[](char *) fSPropParameterSetsStr[j];
 }
 
-void H264or5VideoFileSink::afterGettingFrame(unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime) {
+void H264or5VideoFileSink::afterGettingFrame(unsigned frameSize,
+                                             unsigned numTruncatedBytes,
+                                             struct timeval presentationTime) {
   unsigned char const start_code[4] = {0x00, 0x00, 0x00, 0x01};
 
   if (!fHaveWrittenFirstFrame) {
-    // If we have NAL units encoded in "sprop parameter strings", prepend these to the file:
+    // If we have NAL units encoded in "sprop parameter strings", prepend these
+    // to the file:
     for (unsigned j = 0; j < 3; ++j) {
       unsigned numSPropRecords;
-      SPropRecord* sPropRecords
-	= parseSPropParameterSets(fSPropParameterSetsStr[j], numSPropRecords);
+      SPropRecord *sPropRecords =
+          parseSPropParameterSets(fSPropParameterSetsStr[j], numSPropRecords);
       for (unsigned i = 0; i < numSPropRecords; ++i) {
-	if (sPropRecords[i].sPropLength > 0) addData(start_code, 4, presentationTime);
-	addData(sPropRecords[i].sPropBytes, sPropRecords[i].sPropLength, presentationTime);
+        if (sPropRecords[i].sPropLength > 0)
+          addData(start_code, 4, presentationTime);
+        addData(sPropRecords[i].sPropBytes, sPropRecords[i].sPropLength,
+                presentationTime);
       }
       delete[] sPropRecords;
     }
@@ -61,6 +67,7 @@ void H264or5VideoFileSink::afterGettingFrame(unsigned frameSize, unsigned numTru
   // Write the input data to the file, with the start code in front:
   addData(start_code, 4, presentationTime);
 
-  // Call the parent class to complete the normal file write with the input data:
+  // Call the parent class to complete the normal file write with the input
+  // data:
   FileSink::afterGettingFrame(frameSize, numTruncatedBytes, presentationTime);
 }
