@@ -22,8 +22,8 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include "liveMedia.hh"
 
 #define OUR_HLS_SEGMENTATION_DURATION 6
-#define OUR_HLS_FILENAME_PREFIX "hlsTest"
-char const *inputFileName = "in.264";
+#define OUR_HLS_FILENAME_PREFIX "stream"
+char const *inputFileName = "in.h264";
 FILE *ourM3U8Fid = NULL;
 
 void segmentationCallback(void *clientData, char const *segmentFileName,

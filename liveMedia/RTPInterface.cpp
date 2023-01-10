@@ -385,7 +385,7 @@ RTPInterface::sendRTPorRTCPPacketOverTCP(u_int8_t *packet, unsigned packetSize,
     framingHeader[1] = streamChannelId;
     framingHeader[2] = (u_int8_t)((packetSize & 0xFF00) >> 8);
     framingHeader[3] = (u_int8_t)(packetSize & 0xFF);
-    if (!sendDataOverTCP(socketNum, framingHeader, 4, False))
+    if (!sendDataOverTCP(socketNum, framingHeader, 4, True))
       break;
 
     if (!sendDataOverTCP(socketNum, packet, packetSize, True))

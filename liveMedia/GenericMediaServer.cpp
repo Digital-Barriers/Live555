@@ -181,7 +181,7 @@ int GenericMediaServer::setUpOurSocket(UsageEnvironment &env, Port &ourPort) {
       break;
 
     // Make sure we have a big send buffer:
-    if (!increaseSendBufferTo(env, ourSocket, 50 * 1024))
+    if (!increaseSendBufferTo(env, ourSocket, 128 * 1024))
       break;
 
     // Allow multiple simultaneous connections:

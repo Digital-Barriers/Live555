@@ -48,6 +48,14 @@ extern "C" int initializeWinsockIfNecessary();
 netAddressBits SendingInterfaceAddr = INADDR_ANY;
 netAddressBits ReceivingInterfaceAddr = INADDR_ANY;
 
+void setSendingInterfaceAddr(netAddressBits inAddr) {
+  SendingInterfaceAddr = inAddr;
+}
+
+void setReceivingInterfaceAddr(netAddressBits recAddr) {
+  ReceivingInterfaceAddr = recAddr;
+}
+
 static void socketErr(UsageEnvironment &env, char const *errorMsg) {
   env.setResultErrMsg(errorMsg);
 }
@@ -406,12 +414,21 @@ Boolean writeSocket(UsageEnvironment &env, int socket, struct in_addr address,
     int bytesSent = sendto(socket, (char *)buffer, bufferSize, 0,
                            (struct sockaddr *)&dest, sizeof dest);
     if (bytesSent != (int)bufferSize) {
-      char tmpBuf[100];
-      sprintf(tmpBuf,
-              "writeSocket(%d), sendTo() error: wrote %d bytes instead of %u: ",
-              socket, bytesSent, bufferSize);
-      socketErr(env, tmpBuf);
-      break;
+      // Try again with a 100ms blocking timeout
+      makeSocketBlocking(socket, 100);
+      bytesSent = sendto(socket, (char *)buffer, bufferSize, 0,
+                         (struct sockaddr *)&dest, sizeof dest);
+      makeSocketNonBlocking(socket);
+
+      if (bytesSent != (int)bufferSize) {
+        char tmpBuf[100];
+        sprintf(
+            tmpBuf,
+            "writeSocket(%d), sendTo() error: wrote %d bytes instead of %u: ",
+            socket, bytesSent, bufferSize);
+        socketErr(env, tmpBuf);
+        break;
+      }
     }
 
     return True;
