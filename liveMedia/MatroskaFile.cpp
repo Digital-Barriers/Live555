@@ -609,6 +609,8 @@ RTPSink* MatroskaFile
 
     if (strcmp(track->mimeType, "audio/L16") == 0) {
       result = SimpleRTPSink::createNew(envir(), rtpGroupsock,rtpPayloadTypeIfDynamic, track->samplingFrequency, "audio", "L16", track->numChannels);
+    } else if (strcmp(track->mimeType, "audio/G711") == 0) {
+      result = SimpleRTPSink::createNew(envir(), rtpGroupsock, rtpPayloadTypeIfDynamic, track->samplingFrequency, "audio", "PCMU", track->numChannels);
     } else if (strcmp(track->mimeType, "audio/MPEG") == 0) {
       result = MPEG1or2AudioRTPSink::createNew(envir(), rtpGroupsock);
     } else if (strcmp(track->mimeType, "audio/AAC") == 0) {

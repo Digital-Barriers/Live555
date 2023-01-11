@@ -53,6 +53,14 @@ ipv4AddressBits SendingInterfaceAddr = INADDR_ANY;
 ipv4AddressBits ReceivingInterfaceAddr = INADDR_ANY;
 in6_addr ReceivingInterfaceAddr6 = IN6ADDR_ANY_INIT;
 
+void setSendingInterfaceAddr(ipv4AddressBits inAddr) {
+  SendingInterfaceAddr = inAddr;
+}
+
+void setReceivingInterfaceAddr(ipv4AddressBits recAddr) {
+  ReceivingInterfaceAddr = recAddr;
+}
+
 static void socketErr(UsageEnvironment& env, char const* errorMsg) {
   env.setResultErrMsg(errorMsg);
 }
