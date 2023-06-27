@@ -23,7 +23,7 @@ else ()
     add_compile_options(-DALLOW_RTSP_SERVER_PORT_REUSE=1)
 endif ()
 
-add_definitions(-DNO_OPENSSL)
+add_definitions(-DNO_OPENSSL -DNO_GETIFADDRS)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(UsageEnvironment)

@@ -39,6 +39,7 @@ class OnDemandServerMediaSubsession: public ServerMediaSubsession {
 protected: // we're a virtual base class
   OnDemandServerMediaSubsession(UsageEnvironment& env, Boolean reuseFirstSource,
 				portNumBits initialPortNum = 6970,
+				portNumBits endPortNum = 0,
 				Boolean multiplexRTCPWithRTP = False);
   virtual ~OnDemandServerMediaSubsession();
 
@@ -140,6 +141,7 @@ protected:
 private:
   Boolean fReuseFirstSource;
   portNumBits fInitialPortNum;
+  portNumBits fEndPortNum;
   Boolean fMultiplexRTCPWithRTP;
   void* fLastStreamToken;
   char fCNAME[100]; // for RTCP
