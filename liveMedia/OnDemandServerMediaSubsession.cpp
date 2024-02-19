@@ -26,6 +26,7 @@ OnDemandServerMediaSubsession
 ::OnDemandServerMediaSubsession(UsageEnvironment& env,
 				Boolean reuseFirstSource,
 				portNumBits initialPortNum,
+				portNumBits endPortNum,
 				Boolean multiplexRTCPWithRTP)
   : ServerMediaSubsession(env),
     fSDPLines(NULL), fMIKEYStateMessage(NULL), fMIKEYStateMessageSize(0),
@@ -39,6 +40,7 @@ OnDemandServerMediaSubsession
     // Make sure RTP ports are even-numbered:
     fInitialPortNum = (initialPortNum+1)&~1;
   }
+  fEndPortNum = endPortNum;
   gethostname(fCNAME, sizeof fCNAME);
   fCNAME[sizeof fCNAME-1] = '\0'; // just in case
 }
@@ -135,6 +137,7 @@ void OnDemandServerMediaSubsession
 	// We're streaming raw UDP (not RTP). Create a single groupsock:
 	NoReuse dummy(envir()); // ensures that we skip over ports that are already in use
 	for (serverPortNum = fInitialPortNum; ; ++serverPortNum) {
+	  if (fEndPortNum > 0 && serverPortNum > fEndPortNum) serverPortNum = fInitialPortNum;
 	  serverRTPPort = serverPortNum;
 	  rtpGroupsock = createGroupsock(nullAddress(destinationAddress.ss_family), serverRTPPort);
 	  if (rtpGroupsock->socketNum() >= 0) break; // success
@@ -147,6 +150,7 @@ void OnDemandServerMediaSubsession
 	// (If we're multiplexing RTCP and RTP over the same port number, it can be odd or even.)
 	NoReuse dummy(envir()); // ensures that we skip over ports that are already in use
 	for (portNumBits serverPortNum = fInitialPortNum; ; ++serverPortNum) {
+	  if (fEndPortNum > 0 && serverPortNum > fEndPortNum) serverPortNum = fInitialPortNum;
 	  serverRTPPort = serverPortNum;
 	  rtpGroupsock = createGroupsock(nullAddress(destinationAddress.ss_family), serverRTPPort);
 	  if (rtpGroupsock->socketNum() < 0) {

@@ -611,6 +611,8 @@ RTPSink* MatroskaFile
       result = SimpleRTPSink::createNew(envir(), rtpGroupsock,rtpPayloadTypeIfDynamic, track->samplingFrequency, "audio", "L16", track->numChannels);
     } else if (strcmp(track->mimeType, "audio/MPEG") == 0) {
       result = MPEG1or2AudioRTPSink::createNew(envir(), rtpGroupsock);
+    } else if (strcmp(track->mimeType, "audio/G711") == 0) {
+        result = SimpleRTPSink::createNew(envir(), rtpGroupsock, rtpPayloadTypeIfDynamic, track->samplingFrequency, "audio", "PCMU", track->numChannels);
     } else if (strcmp(track->mimeType, "audio/AAC") == 0) {
       // The Matroska file's 'Codec Private' data is assumed to be the AAC configuration
       // information.  Use this to generate a hexadecimal 'config' string for the new RTP sink:

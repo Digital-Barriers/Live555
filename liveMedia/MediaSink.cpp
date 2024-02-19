@@ -223,3 +223,13 @@ void OutPacketBuffer::resetPacketStart() {
   }
   fPacketStart = 0;
 }
+
+void setOutputPacketMaxSize(unsigned size)
+{
+  OutPacketBuffer::maxSize = size;
+}
+
+void increaseOutputPacketMaxSize(unsigned size)
+{
+  OutPacketBuffer::increaseMaxSizeTo(size);
+}

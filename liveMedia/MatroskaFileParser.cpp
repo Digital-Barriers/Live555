@@ -464,6 +464,8 @@ Boolean MatroskaFileParser::parseTrack() {
 	    } else if (strcmp(codecID, "A_OPUS") == 0) {
 	      track->mimeType = "audio/OPUS";
 	      track->codecIsOpus = True;
+        } else if (strncmp(codecID, "A_MS/ACM", 8) == 0) {
+            track->mimeType = "audio/G711";
 	    } else if (strcmp(codecID, "V_MPEG4/ISO/AVC") == 0) {
 	      track->mimeType = "video/H264";
 	    } else if (strcmp(codecID, "V_MPEGH/ISO/HEVC") == 0) {
