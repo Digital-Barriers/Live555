@@ -50,7 +50,7 @@ BasicTaskScheduler0::BasicTaskScheduler0()
   fHandlers = new HandlerSet;
   for (unsigned i = 0; i < MAX_NUM_EVENT_TRIGGERS; ++i) {
 #ifndef NO_STD_LIB
-    fTriggersAwaitingHandling[i].clear();
+    fTriggersAwaitingHandling[i] = false;
 #else
     fTriggersAwaitingHandling[i] = False;
 #endif
@@ -123,7 +123,7 @@ void BasicTaskScheduler0::deleteEventTrigger(EventTriggerId eventTriggerId) {
   for (unsigned i = 0; i < MAX_NUM_EVENT_TRIGGERS; ++i) {
     if ((eventTriggerId&mask) != 0) {
 #ifndef NO_STD_LIB
-      fTriggersAwaitingHandling[i].clear();
+      fTriggersAwaitingHandling[i] = false;
 #else
       fTriggersAwaitingHandling[i] = False;
 #endif
@@ -145,7 +145,7 @@ void BasicTaskScheduler0::triggerEvent(EventTriggerId eventTriggerId, void* clie
     if ((eventTriggerId&mask) != 0) {
       fTriggeredEventClientDatas[i] = clientData;
 #ifndef NO_STD_LIB
-      (void)fTriggersAwaitingHandling[i].test_and_set();
+      fTriggersAwaitingHandling[i] = true;
 #else
       fTriggersAwaitingHandling[i] = True;
 #endif

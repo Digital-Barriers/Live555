@@ -117,7 +117,7 @@ protected:
 
   // To implement event triggers:
 #ifndef NO_STD_LIB
-  std::atomic_flag fTriggersAwaitingHandling[MAX_NUM_EVENT_TRIGGERS];
+  std::atomic<bool> fTriggersAwaitingHandling[MAX_NUM_EVENT_TRIGGERS];
 #else
   Boolean volatile fTriggersAwaitingHandling[MAX_NUM_EVENT_TRIGGERS];
 #endif
