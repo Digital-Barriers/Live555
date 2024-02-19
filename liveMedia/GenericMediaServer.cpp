@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2024 Live Networks, Inc.  All rights reserved.
 // A generic media server class, used to implement a RTSP server, and any other server that uses
 //  "ServerMediaSession" objects to describe media to be served.
 // Implementation
@@ -189,11 +189,10 @@ int GenericMediaServer::setUpOurSocket(UsageEnvironment& env, Port& ourPort, int
 #endif
     
     ourSocket = setupStreamSocket(env, ourPort, domain, True, True);
-        // later fix to support IPv6
     if (ourSocket < 0) break;
     
     // Make sure we have a big send buffer:
-    if (!increaseSendBufferTo(env, ourSocket, 128*1024)) break;
+    if (!increaseSendBufferTo(env, ourSocket, 50*1024)) break;
     
     // Allow multiple simultaneous connections:
     if (listen(ourSocket, LISTEN_BACKLOG_SIZE) < 0) {

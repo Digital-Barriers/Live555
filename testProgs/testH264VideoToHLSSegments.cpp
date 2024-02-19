@@ -13,7 +13,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
-// Copyright (c) 1996-2022, Live Networks, Inc.  All rights reserved
+// Copyright (c) 1996-2024, Live Networks, Inc.  All rights reserved
 // A program that converts a H.264 (Elementary Stream) video file into sequence of
 // HLS (HTTP Live Streaming) segments, plus a ".m3u8" file that can be accessed via a web browser.
 // main program
@@ -22,8 +22,8 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include "BasicUsageEnvironment.hh"
 
 #define OUR_HLS_SEGMENTATION_DURATION 6
-#define OUR_HLS_FILENAME_PREFIX "stream"
-char const* inputFileName = "in.h264";
+#define OUR_HLS_FILENAME_PREFIX "hlsTest"
+char const* inputFileName = "in.264";
 FILE* ourM3U8Fid = NULL;
 
 void segmentationCallback(void* clientData, char const* segmentFileName, double segmentDuration); // forward

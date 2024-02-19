@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "groupsock"
-// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2024 Live Networks, Inc.  All rights reserved.
 // Helper routines to implement 'group sockets'
 // C++ header
 
@@ -23,6 +23,10 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 #ifndef _NET_ADDRESS_HH
 #include "NetAddress.hh"
+#endif
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
 #endif
 
 int setupDatagramSocket(UsageEnvironment& env, Port port, int domain);
@@ -89,10 +93,6 @@ Boolean weHaveAnIPAddress(UsageEnvironment& env);
 extern ipv4AddressBits SendingInterfaceAddr;
 extern ipv4AddressBits ReceivingInterfaceAddr;
 extern in6_addr ReceivingInterfaceAddr6;
-
-void setSendingInterfaceAddr(ipv4AddressBits inAddr);
-void setReceivingInterfaceAddr(ipv4AddressBits recAddr);
-void setBindToInterfaceAddrOnly(const bool& bind);
 
 // Allocates a randomly-chosen IPv4 SSM (multicast) address:
 ipv4AddressBits chooseRandomIPv4SSMAddress(UsageEnvironment& env);

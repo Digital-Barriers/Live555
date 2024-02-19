@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2024 Live Networks, Inc.  All rights reserved.
 // A parser for a Matroska file.
 // Implementation
 
@@ -88,6 +88,13 @@ void MatroskaFileParser::seekToTime(double& seekNPT) {
 void MatroskaFileParser::pause() {
   resetPresentationTimes();
   // to ensure that we presentation times continue from 'wall clock' time after we resume
+}
+
+void MatroskaFileParser::stopAnyDeliveryForTrack(unsigned trackNumber) {
+  if (trackNumber == fBlockTrackNumber) {
+    fCurFrameTo = NULL;
+    fCurFrameNumBytesToGet = fCurFrameNumBytesToSkip = 0;
+  }
 }
 
 void MatroskaFileParser
@@ -457,8 +464,6 @@ Boolean MatroskaFileParser::parseTrack() {
 	    } else if (strcmp(codecID, "A_OPUS") == 0) {
 	      track->mimeType = "audio/OPUS";
 	      track->codecIsOpus = True;
-            } else if (strncmp(codecID, "A_MS/ACM", 8) == 0) {
-              track->mimeType = "audio/G711";
 	    } else if (strcmp(codecID, "V_MPEG4/ISO/AVC") == 0) {
 	      track->mimeType = "video/H264";
 	    } else if (strcmp(codecID, "V_MPEGH/ISO/HEVC") == 0) {

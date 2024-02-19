@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2024 Live Networks, Inc.  All rights reserved.
 // A 'ServerMediaSubsession' object that creates new, unicast, "RTPSink"s
 // on demand.
 // Implementation
@@ -26,7 +26,6 @@ OnDemandServerMediaSubsession
 ::OnDemandServerMediaSubsession(UsageEnvironment& env,
 				Boolean reuseFirstSource,
 				portNumBits initialPortNum,
-				portNumBits endPortNum,
 				Boolean multiplexRTCPWithRTP)
   : ServerMediaSubsession(env),
     fSDPLines(NULL), fMIKEYStateMessage(NULL), fMIKEYStateMessageSize(0),
@@ -40,7 +39,6 @@ OnDemandServerMediaSubsession
     // Make sure RTP ports are even-numbered:
     fInitialPortNum = (initialPortNum+1)&~1;
   }
-  fEndPortNum = endPortNum;
   gethostname(fCNAME, sizeof fCNAME);
   fCNAME[sizeof fCNAME-1] = '\0'; // just in case
 }
@@ -137,7 +135,6 @@ void OnDemandServerMediaSubsession
 	// We're streaming raw UDP (not RTP). Create a single groupsock:
 	NoReuse dummy(envir()); // ensures that we skip over ports that are already in use
 	for (serverPortNum = fInitialPortNum; ; ++serverPortNum) {
-	  if (fEndPortNum > 0 && serverPortNum > fEndPortNum) serverPortNum = fInitialPortNum;
 	  serverRTPPort = serverPortNum;
 	  rtpGroupsock = createGroupsock(nullAddress(destinationAddress.ss_family), serverRTPPort);
 	  if (rtpGroupsock->socketNum() >= 0) break; // success
@@ -150,7 +147,6 @@ void OnDemandServerMediaSubsession
 	// (If we're multiplexing RTCP and RTP over the same port number, it can be odd or even.)
 	NoReuse dummy(envir()); // ensures that we skip over ports that are already in use
 	for (portNumBits serverPortNum = fInitialPortNum; ; ++serverPortNum) {
-	  if (fEndPortNum > 0 && serverPortNum > fEndPortNum) serverPortNum = fInitialPortNum;
 	  serverRTPPort = serverPortNum;
 	  rtpGroupsock = createGroupsock(nullAddress(destinationAddress.ss_family), serverRTPPort);
 	  if (rtpGroupsock->socketNum() < 0) {
@@ -334,7 +330,7 @@ FramedSource* OnDemandServerMediaSubsession::getStreamSource(void* streamToken) 
 
 void OnDemandServerMediaSubsession
 ::getRTPSinkandRTCP(void* streamToken,
-		    RTPSink const*& rtpSink, RTCPInstance const*& rtcp) {
+		    RTPSink*& rtpSink, RTCPInstance*& rtcp) {
   if (streamToken == NULL) {
     rtpSink = NULL;
     rtcp = NULL;

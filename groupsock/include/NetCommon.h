@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 /* "groupsock" interface
- * Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
+ * Copyright (c) 1996-2024 Live Networks, Inc.  All rights reserved.
  * Common include files, typically used for networking
  */
 
@@ -23,7 +23,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 
 #if defined(__WIN32__) || defined(_WIN32) || defined(_WIN32_WCE)
 /* Windows */
-#if defined(WINNT) || defined(__WINNT) || defined(__BORLANDC__) || defined(__MINGW32__) || defined(_WIN32_WCE) || defined (_MSC_VER)
+#if defined(WINNT) || defined(_WINNT) || defined(__BORLANDC__) || defined(__MINGW32__) || defined(_WIN32_WCE) || defined (_MSC_VER)
 #define _MSWSOCK_
 #include <winsock2.h>
 #include <ws2tcpip.h>

@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2022 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2024 Live Networks, Inc.  All rights reserved.
 // A class that encapsulates a Matroska file.
 // Implementation
 
@@ -609,8 +609,6 @@ RTPSink* MatroskaFile
 
     if (strcmp(track->mimeType, "audio/L16") == 0) {
       result = SimpleRTPSink::createNew(envir(), rtpGroupsock,rtpPayloadTypeIfDynamic, track->samplingFrequency, "audio", "L16", track->numChannels);
-    } else if (strcmp(track->mimeType, "audio/G711") == 0) {
-      result = SimpleRTPSink::createNew(envir(), rtpGroupsock, rtpPayloadTypeIfDynamic, track->samplingFrequency, "audio", "PCMU", track->numChannels);
     } else if (strcmp(track->mimeType, "audio/MPEG") == 0) {
       result = MPEG1or2AudioRTPSink::createNew(envir(), rtpGroupsock);
     } else if (strcmp(track->mimeType, "audio/AAC") == 0) {
@@ -917,6 +915,8 @@ MatroskaDemuxedTrack* MatroskaDemux::lookupDemuxedTrack(unsigned trackNumber) {
 }
 
 void MatroskaDemux::removeTrack(unsigned trackNumber) {
+  if (fOurParser != NULL) fOurParser->stopAnyDeliveryForTrack(trackNumber);
+
   fDemuxedTracksTable->Remove((char const*)trackNumber);
   if (fDemuxedTracksTable->numEntries() == 0) {
     // We no longer have any demuxed tracks, so delete ourselves now:
