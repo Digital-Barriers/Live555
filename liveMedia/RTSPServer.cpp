@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2024 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2026 Live Networks, Inc.  All rights reserved.
 // A RTSP server
 // Implementation
 
@@ -156,13 +156,6 @@ char const* RTSPServer::allowedCommandNames() {
 UserAuthenticationDatabase* RTSPServer::getAuthenticationDatabaseForCommand(char const* /*cmdName*/) {
   // default implementation
   return fAuthDB;
-}
-
-Boolean RTSPServer::specialClientAccessCheck(int /*clientSocket*/,
-					     struct sockaddr_storage const& /*clientAddr*/,
-					     char const* /*urlSuffix*/) {
-  // default implementation
-  return True;
 }
 
 Boolean RTSPServer::specialClientUserAccessCheck(int /*clientSocket*/,
@@ -327,6 +320,8 @@ void RTSPServer::stopTCPStreamingOnSocket(int socketNum) {
     } while (sotcp != NULL);
     fTCPStreamingDatabase->Remove((char const*)socketNum);
   }
+
+  RTPInterface::clearServerRequestAlternativeByteHandler(envir(), socketNum);
 }
 
 
@@ -339,7 +334,7 @@ RTSPServer::RTSPClientConnection
   : GenericMediaServer::ClientConnection(ourServer, clientSocket, clientAddr, useTLS),
     fOurRTSPServer(ourServer), fClientInputSocket(fOurSocket), fClientOutputSocket(fOurSocket),
     fPOSTSocketTLS(envir()), fAddressFamily(clientAddr.ss_family),
-    fIsActive(True), fRecursionCount(0), fOurSessionCookie(NULL), fScheduledDelayedTask(0) {
+    fIsActive(True), fRecursionCount(0), fCurrentCSeq(NULL), fOurSessionCookie(NULL), fScheduledDelayedTask(0) {
   resetRequestBuffer();
 }
 
@@ -351,6 +346,7 @@ RTSPServer::RTSPClientConnection::~RTSPClientConnection() {
   }
   
   closeSocketsRTSP();
+  delete[] fCurrentCSeq;
 }
 
 // Handler routines for specific RTSP commands:
@@ -370,7 +366,10 @@ void RTSPServer::RTSPClientConnection
 }
 
 void RTSPServer::RTSPClientConnection
-::handleCmd_SET_PARAMETER(char const* /*fullRequestStr*/) {
+::handleCmd_SET_PARAMETER(char const* fullRequestStr) {
+  // If we're authenticating, then any attempt to change state should be checked:
+  if (!authenticationOK("SET_PARAMETER", "", fullRequestStr)) return;
+
   // By default, we implement "SET_PARAMETER" (on the entire server) just as a 'no op', and send back an empty response.
   // (If you want to handle this type of "SET_PARAMETER" differently, you can do so by defining a subclass of "RTSPServer"
   // and "RTSPServer::RTSPClientConnection", and then reimplement this virtual function in your subclass.)
@@ -828,7 +827,7 @@ void RTSPServer::RTSPClientConnection::handleRequestBytes(int newBytesRead) {
     
       // We now have a complete RTSP request.
       // Handle the specified command (beginning with commands that are session-independent):
-      fCurrentCSeq = cseq;
+      delete[] fCurrentCSeq; fCurrentCSeq = strDup(cseq);
 
       // If the request specified the wrong type of URL
       // (i.e., "rtsps" instead of "rtsp", or vice versa), then send back a 'redirect':
@@ -1080,11 +1079,6 @@ static Boolean parseAuthorizationHeader(char const* buf,
 
 Boolean RTSPServer::RTSPClientConnection
 ::authenticationOK(char const* cmdName, char const* urlSuffix, char const* fullRequestStr) {
-  if (!fOurRTSPServer.specialClientAccessCheck(fClientInputSocket, fClientAddr, urlSuffix)) {
-    setRTSPResponse("401 Unauthorized");
-    return False;
-  }
-  
   // If we weren't set up with an authentication database, we're OK:
   UserAuthenticationDatabase* authDB = fOurRTSPServer.getAuthenticationDatabaseForCommand(cmdName);
   if (authDB == NULL) return True;
@@ -1584,7 +1578,9 @@ void RTSPServer::RTSPClientSession
     
     subsession->getStreamParameters(fOurSessionId, fOurClientConnection->fClientAddr,
 				    clientRTPPort, clientRTCPPort,
-				    fStreamStates[trackNum].tcpSocketNum, rtpChannelId, rtcpChannelId,
+				    streamingMode == RTP_TCP
+				    ? fStreamStates[trackNum].tcpSocketNum : -1,
+				    rtpChannelId, rtcpChannelId,
                                     &fOurClientConnection->fTLS,
 				    destinationAddress, destinationTTL, fIsMulticast,
 				    serverRTPPort, serverRTCPPort,
@@ -1734,11 +1730,11 @@ void RTSPServer::RTSPClientSession
   }
   
   if (strcmp(cmdName, "TEARDOWN") == 0) {
-    handleCmd_TEARDOWN(ourClientConnection, subsession);
+    handleCmd_TEARDOWN(ourClientConnection, subsession, fullRequestStr);
   } else if (strcmp(cmdName, "PLAY") == 0) {
     handleCmd_PLAY(ourClientConnection, subsession, fullRequestStr);
   } else if (strcmp(cmdName, "PAUSE") == 0) {
-    handleCmd_PAUSE(ourClientConnection, subsession);
+    handleCmd_PAUSE(ourClientConnection, subsession, fullRequestStr);
   } else if (strcmp(cmdName, "GET_PARAMETER") == 0) {
     handleCmd_GET_PARAMETER(ourClientConnection, subsession, fullRequestStr);
   } else if (strcmp(cmdName, "SET_PARAMETER") == 0) {
@@ -1748,7 +1744,10 @@ void RTSPServer::RTSPClientSession
 
 void RTSPServer::RTSPClientSession
 ::handleCmd_TEARDOWN(RTSPServer::RTSPClientConnection* ourClientConnection,
-		     ServerMediaSubsession* subsession) {
+		     ServerMediaSubsession* subsession, char const* fullRequestStr) {
+  // If we're authenticating, then check here, to protect against use of a stolen session id:
+  if (!ourClientConnection->authenticationOK("TEARDOWN", "", fullRequestStr)) return;
+
   unsigned i;
   for (i = 0; i < fNumStreamStates; ++i) {
     if (subsession == NULL /* means: aggregated operation */
@@ -1782,6 +1781,9 @@ void RTSPServer::RTSPClientSession
     = fOurRTSPServer.rtspURL(fOurServerMediaSession, ourClientConnection->fClientInputSocket);
   unsigned rtspURLSize = strlen(rtspURL);
   
+  // If we're authenticating, then check here, to protect against use of a stolen session id:
+  if (!ourClientConnection->authenticationOK("PLAY", rtspURL, fullRequestStr)) return;
+
   // Parse the client's "Scale:" header, if any:
   float scale;
   Boolean sawScaleHeader = parseScaleHeader(fullRequestStr, scale);
@@ -1995,7 +1997,10 @@ void RTSPServer::RTSPClientSession
 
 void RTSPServer::RTSPClientSession
 ::handleCmd_PAUSE(RTSPServer::RTSPClientConnection* ourClientConnection,
-		  ServerMediaSubsession* subsession) {
+		  ServerMediaSubsession* subsession, char const* fullRequestStr) {
+  // If we're authenticating, then check here, to protect against use of a stolen session id:
+  if (!ourClientConnection->authenticationOK("PAUSE", "", fullRequestStr)) return;
+
   for (unsigned i = 0; i < fNumStreamStates; ++i) {
     if (subsession == NULL /* means: aggregated operation */
 	|| subsession == fStreamStates[i].subsession) {
@@ -2019,7 +2024,10 @@ void RTSPServer::RTSPClientSession
 
 void RTSPServer::RTSPClientSession
 ::handleCmd_SET_PARAMETER(RTSPServer::RTSPClientConnection* ourClientConnection,
-			  ServerMediaSubsession* /*subsession*/, char const* /*fullRequestStr*/) {
+			  ServerMediaSubsession* /*subsession*/, char const* fullRequestStr) {
+  // If we're authenticating, then any attempt to change state should be checked:
+  if (!fOurClientConnection->authenticationOK("SET_PARAMETER", "", fullRequestStr)) return;
+
   // By default, we implement "SET_PARAMETER" just as a 'keep alive', and send back an empty response.
   // (If you want to handle "SET_PARAMETER" properly, you can do so by defining a subclass of "RTSPServer"
   // and "RTSPServer::RTSPClientSession", and then reimplement this virtual function in your subclass.)

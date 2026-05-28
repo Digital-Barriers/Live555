@@ -13,7 +13,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
-// Copyright (c) 1996-2024 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2026 Live Networks, Inc.  All rights reserved.
 // Basic Usage Environment: for a simple, non-scripted, console application
 // Implementation
 
@@ -50,7 +50,7 @@ BasicTaskScheduler0::BasicTaskScheduler0()
   fHandlers = new HandlerSet;
   for (unsigned i = 0; i < MAX_NUM_EVENT_TRIGGERS; ++i) {
 #ifndef NO_STD_LIB
-    fTriggersAwaitingHandling[i] = false;
+    fTriggersAwaitingHandling[i].clear();
 #else
     fTriggersAwaitingHandling[i] = False;
 #endif
@@ -80,7 +80,7 @@ void BasicTaskScheduler0::unscheduleDelayedTask(TaskToken& prevTask) {
   delete alarmHandler;
 }
 
-void BasicTaskScheduler0::doEventLoop(char volatile* watchVariable) {
+void BasicTaskScheduler0::doEventLoop(EventLoopWatchVariable* watchVariable) {
   // Repeatedly loop, handling readble sockets and timed events:
   while (1) {
     if (watchVariable != NULL && *watchVariable != 0) break;
@@ -123,7 +123,7 @@ void BasicTaskScheduler0::deleteEventTrigger(EventTriggerId eventTriggerId) {
   for (unsigned i = 0; i < MAX_NUM_EVENT_TRIGGERS; ++i) {
     if ((eventTriggerId&mask) != 0) {
 #ifndef NO_STD_LIB
-      fTriggersAwaitingHandling[i] = false;
+      fTriggersAwaitingHandling[i].clear();
 #else
       fTriggersAwaitingHandling[i] = False;
 #endif
@@ -145,7 +145,7 @@ void BasicTaskScheduler0::triggerEvent(EventTriggerId eventTriggerId, void* clie
     if ((eventTriggerId&mask) != 0) {
       fTriggeredEventClientDatas[i] = clientData;
 #ifndef NO_STD_LIB
-      fTriggersAwaitingHandling[i] = true;
+      (void)fTriggersAwaitingHandling[i].test_and_set();
 #else
       fTriggersAwaitingHandling[i] = True;
 #endif

@@ -14,7 +14,7 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 **********/
 // "liveMedia"
-// Copyright (c) 1996-2024 Live Networks, Inc.  All rights reserved.
+// Copyright (c) 1996-2026 Live Networks, Inc.  All rights reserved.
 // A 'ServerMediaSubsession' object that creates new, unicast, "RTPSink"s
 // on demand.
 // Implementation
@@ -26,7 +26,6 @@ OnDemandServerMediaSubsession
 ::OnDemandServerMediaSubsession(UsageEnvironment& env,
 				Boolean reuseFirstSource,
 				portNumBits initialPortNum,
-				portNumBits endPortNum,
 				Boolean multiplexRTCPWithRTP)
   : ServerMediaSubsession(env),
     fSDPLines(NULL), fMIKEYStateMessage(NULL), fMIKEYStateMessageSize(0),
@@ -40,7 +39,6 @@ OnDemandServerMediaSubsession
     // Make sure RTP ports are even-numbered:
     fInitialPortNum = (initialPortNum+1)&~1;
   }
-  fEndPortNum = endPortNum;
   gethostname(fCNAME, sizeof fCNAME);
   fCNAME[sizeof fCNAME-1] = '\0'; // just in case
 }
@@ -61,6 +59,21 @@ OnDemandServerMediaSubsession::~OnDemandServerMediaSubsession() {
 
 char const*
 OnDemandServerMediaSubsession::sdpLines(int addressFamily) {
+  if (fLastStreamToken != NULL && fReuseFirstSource) {
+    // We're reusing an existing stream.
+    // Hack: Check whether the SRTP ROC has changed.
+    // If so, we need to regenerate the SDP description.
+    RTPSink* rtpSink = ((StreamState*)fLastStreamToken)->rtpSink();
+    if (rtpSink != NULL && rtpSink->srtpROC() != fSRTP_ROC) {
+      fSRTP_ROC = rtpSink->srtpROC();
+      rtpSink->setupForSRTP(fParentSession->streamingIsEncrypted, fSRTP_ROC);
+      setSDPLinesFromRTPSink(rtpSink, getStreamSource(fLastStreamToken), rtpSink->estimatedBitrate());
+
+      RTCPInstance* rtcp = ((StreamState*)fLastStreamToken)->rtcpInstance();
+      if (rtcp != NULL) rtcp->setupForSRTCP();
+    }
+  }
+
   if (fSDPLines == NULL) {
     // We need to construct a set of SDP lines that describe this
     // subsession (as a unicast stream).  To do so, we first create
@@ -75,8 +88,15 @@ OnDemandServerMediaSubsession::sdpLines(int addressFamily) {
     RTPSink* dummyRTPSink = createNewRTPSink(dummyGroupsock, rtpPayloadType, inputSource);
     if (dummyRTPSink != NULL) {
       if (fParentSession->streamingUsesSRTP) {
-	fMIKEYStateMessage = dummyRTPSink->setupForSRTP(fParentSession->streamingIsEncrypted,
-							fMIKEYStateMessageSize);
+	if (fMIKEYStateMessage != NULL) {
+	  // Use the existing stream's MIKEY info to generate the SDP:
+	  dummyRTPSink->setupForSRTP(fMIKEYStateMessage, fMIKEYStateMessageSize, fSRTP_ROC);
+	} else {
+	  // Create new MIKEY info for this stream:
+	  fMIKEYStateMessage
+	    = dummyRTPSink->setupForSRTP(fParentSession->streamingIsEncrypted, fSRTP_ROC,
+					 fMIKEYStateMessageSize);
+	}
       }
 
       if (dummyRTPSink->estimatedBitrate() > 0) estBitrate = dummyRTPSink->estimatedBitrate();
@@ -137,7 +157,6 @@ void OnDemandServerMediaSubsession
 	// We're streaming raw UDP (not RTP). Create a single groupsock:
 	NoReuse dummy(envir()); // ensures that we skip over ports that are already in use
 	for (serverPortNum = fInitialPortNum; ; ++serverPortNum) {
-	  if (fEndPortNum > 0 && serverPortNum > fEndPortNum) serverPortNum = fInitialPortNum;
 	  serverRTPPort = serverPortNum;
 	  rtpGroupsock = createGroupsock(nullAddress(destinationAddress.ss_family), serverRTPPort);
 	  if (rtpGroupsock->socketNum() >= 0) break; // success
@@ -150,7 +169,6 @@ void OnDemandServerMediaSubsession
 	// (If we're multiplexing RTCP and RTP over the same port number, it can be odd or even.)
 	NoReuse dummy(envir()); // ensures that we skip over ports that are already in use
 	for (portNumBits serverPortNum = fInitialPortNum; ; ++serverPortNum) {
-	  if (fEndPortNum > 0 && serverPortNum > fEndPortNum) serverPortNum = fInitialPortNum;
 	  serverRTPPort = serverPortNum;
 	  rtpGroupsock = createGroupsock(nullAddress(destinationAddress.ss_family), serverRTPPort);
 	  if (rtpGroupsock->socketNum() < 0) {
@@ -181,7 +199,7 @@ void OnDemandServerMediaSubsession
 	  : createNewRTPSink(rtpGroupsock, rtpPayloadType, mediaSource);
 	if (rtpSink != NULL) {
 	  if (fParentSession->streamingUsesSRTP) {
-	    rtpSink->setupForSRTP(fMIKEYStateMessage, fMIKEYStateMessageSize);
+	    rtpSink->setupForSRTP(fMIKEYStateMessage, fMIKEYStateMessageSize, fSRTP_ROC);
 	  }
 	  if (rtpSink->estimatedBitrate() > 0) streamBitrate = rtpSink->estimatedBitrate();
 	}
@@ -440,7 +458,7 @@ void OnDemandServerMediaSubsession
   char const* mediaType = rtpSink->sdpMediaType();
   unsigned char rtpPayloadType = rtpSink->rtpPayloadType();
   struct sockaddr_storage const& addressForSDP = rtpSink->groupsockBeingUsed().groupAddress();
-  portNumBits portNumForSDP = ntohs(rtpSink->groupsockBeingUsed().port().num());
+  portNumBits portNumForSDP = 0; //ntohs(rtpSink->groupsockBeingUsed().port().num());
 
   AddressString ipAddressStr(addressForSDP);
   char* rtpmapLine = rtpSink->rtpmapLine();
@@ -575,13 +593,17 @@ void StreamState
   }
 
   if (!fAreCurrentlyPlaying && fMediaSource != NULL) {
-    if (fRTPSink != NULL) {
-      fRTPSink->startPlaying(*fMediaSource, afterPlayingStreamState, this);
-      fAreCurrentlyPlaying = True;
-    } else if (fUDPSink != NULL) {
-      fUDPSink->startPlaying(*fMediaSource, afterPlayingStreamState, this);
-      fAreCurrentlyPlaying = True;
+    MediaSink* sink;
+    if (fRTPSink != NULL) { sink = fRTPSink; }
+    else if (fUDPSink != NULL) { sink = fUDPSink; }
+    else return;
+    
+    if (!sink->startPlaying(*fMediaSource, afterPlayingStreamState, this)) {
+      fMediaSource->envir() << "sink->startPlaying() failed: "
+			    << fMediaSource->envir().getResultMsg() << "\n";
+      return;
     }
+    fAreCurrentlyPlaying = True;
   }
 }
 
@@ -608,9 +630,6 @@ void StreamState::endPlaying(Destinations* dests, unsigned clientSessionId) {
 
   if (dests->isTCP) {
     if (fRTPSink != NULL) {
-      // Comment out the following, because it prevents the "RTSPClientConnection" object
-      // from being closed after handling a "TEARDOWN": #####
-      //RTPInterface::clearServerRequestAlternativeByteHandler(fRTPSink->envir(), dests->tcpSocketNum);
       fRTPSink->removeStreamSocket(dests->tcpSocketNum, dests->rtpChannelId);
     }
     if (fRTCPInstance != NULL) {
