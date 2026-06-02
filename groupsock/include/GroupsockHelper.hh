@@ -97,6 +97,10 @@ extern in6_addr ReceivingInterfaceAddr6;
 extern char InterfaceBindToDevice[128];
 #endif
 
+void setSendingInterfaceAddr(ipv4AddressBits inAddr);
+void setReceivingInterfaceAddr(ipv4AddressBits recAddr);
+void setBindToInterfaceAddrOnly(const bool& bind);
+
 // Allocates a randomly-chosen IPv4 SSM (multicast) address:
 ipv4AddressBits chooseRandomIPv4SSMAddress(UsageEnvironment& env);
 

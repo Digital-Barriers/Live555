@@ -67,6 +67,9 @@ private:
   void* fAfterClientData;
 };
 
+void setOutputPacketMaxSize(unsigned size);
+void increaseOutputPacketMaxSize(unsigned size);
+
 // A data structure that a sink may use for an output packet:
 class OutPacketBuffer {
 public:
