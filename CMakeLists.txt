@@ -51,3 +51,39 @@ if (LIVE555_BUILD_EXAMPLES)
     add_subdirectory(hlsProxy)
 endif ()
 
+include(GNUInstallDirs)
+
+target_include_directories(live555
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/BasicUsageEnvironment/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/groupsock/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/liveMedia/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/UsageEnvironment/include>
+        $<INSTALL_INTERFACE:include>
+)
+
+install(TARGETS live555
+    EXPORT live555Targets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(DIRECTORY BasicUsageEnvironment/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY groupsock/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY liveMedia/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY UsageEnvironment/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(EXPORT live555Targets
+    FILE live555Targets.cmake
+    NAMESPACE live555::
+    DESTINATION share/live555
+)
+
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/live555Config.cmake"
+    "include(\"\${CMAKE_CURRENT_LIST_DIR}/live555Targets.cmake\")\n"
+)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/live555Config.cmake"
+    DESTINATION share/live555
+)
