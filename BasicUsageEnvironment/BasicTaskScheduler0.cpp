@@ -145,7 +145,7 @@ void BasicTaskScheduler0::triggerEvent(EventTriggerId eventTriggerId, void* clie
     if ((eventTriggerId&mask) != 0) {
       fTriggeredEventClientDatas[i] = clientData;
 #ifndef NO_STD_LIB
-      (void)fTriggersAwaitingHandling[i] = true;
+      fTriggersAwaitingHandling[i] = true;
 #else
       fTriggersAwaitingHandling[i] = True;
 #endif
