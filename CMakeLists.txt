@@ -38,7 +38,11 @@ add_library(live555 SHARED
         $<TARGET_OBJECTS:liveMedia>)
 target_link_libraries(live555)
 
-set_target_properties(live555 PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(live555 PROPERTIES 
+    LINKER_LANGUAGE CXX
+    VERSION "2026.04.22"
+    SOVERSION "1"
+)
 
 if (WIN32)
     target_link_libraries(live555 ws2_32 mswsock)
