@@ -309,6 +309,8 @@ protected:
   // to create new objects of your subclass:
   virtual ClientSession* createNewClientSession(u_int32_t sessionId);
 
+  Boolean fOurConnectionsUseTLS; // by default, False
+
 private:
   static void incomingConnectionHandlerHTTPIPv4(void*, int /*mask*/);
   void incomingConnectionHandlerHTTPIPv4();
@@ -334,7 +336,6 @@ private:
   unsigned fRegisterOrDeregisterRequestCounter;
   UserAuthenticationDatabase* fAuthDB;
   Boolean fAllowStreamingRTPOverTCP; // by default, True
-  Boolean fOurConnectionsUseTLS; // by default, False
   Boolean fWeServeSRTP; // used only if "fOurConnectionsUseTLS" is True
   Boolean fWeEncryptSRTP; // used only if "fWeServeSRTP" is True
 };
